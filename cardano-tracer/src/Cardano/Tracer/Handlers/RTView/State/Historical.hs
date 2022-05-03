@@ -87,6 +87,15 @@ data DataName
   | BlockNumData
   | SlotInEpochData
   | EpochData
+  | NodeCannotForgeData
+  | ForgedSlotLastData
+  | NodeIsLeaderData
+  | NodeIsNotLeaderData
+  | ForgedInvalidSlotLastData
+  | AdoptedSlotLastData
+  | NotAdoptedSlotLastData
+  | AboutToLeadSlotLastData
+  | CouldNotForgeSlotLastData
   -- TX
   | TxsProcessedNumData
   | MempoolBytesData

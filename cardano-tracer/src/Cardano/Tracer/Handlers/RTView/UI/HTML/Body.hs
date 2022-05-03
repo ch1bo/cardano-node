@@ -36,37 +36,26 @@ mkPageBody
   -> DatasetsIndices
   -> DatasetsTimestamps
   -> UI Element
-mkPageBody window networkConfig connectedNodes
+mkPageBody window networkConfig connected
            (ResHistory rHistory) (ChainHistory cHistory) (TXHistory tHistory)
-           datasetIndices datasetTimestamps = do
-  txsProcessedNumTimer <-
-    mkChartTimer connectedNodes tHistory datasetIndices datasetTimestamps TxsProcessedNumData TxsProcessedNumChart
-  mempoolBytesTimer <-
-    mkChartTimer connectedNodes tHistory datasetIndices datasetTimestamps MempoolBytesData    MempoolBytesChart
-  txsInMempoolTimer <-
-    mkChartTimer connectedNodes tHistory datasetIndices datasetTimestamps TxsInMempoolData    TxsInMempoolChart
+           dsIxs dsTss = do
+  txsProcessedNumTimer <- mkChartTimer connected tHistory dsIxs dsTss TxsProcessedNumData TxsProcessedNumChart
+  mempoolBytesTimer    <- mkChartTimer connected tHistory dsIxs dsTss MempoolBytesData    MempoolBytesChart
+  txsInMempoolTimer    <- mkChartTimer connected tHistory dsIxs dsTss TxsInMempoolData    TxsInMempoolChart
 
   txsProcessedNumChart <- mkChart window txsProcessedNumTimer TxsProcessedNumChart "Processed txs"
   mempoolBytesChart    <- mkChart window mempoolBytesTimer    MempoolBytesChart    "Mempool size"
   txsInMempoolChart    <- mkChart window txsInMempoolTimer    TxsInMempoolChart    "Txs in mempool"
 
   -- Resources charts.
-  cpuTimer <-
-    mkChartTimer connectedNodes rHistory datasetIndices datasetTimestamps CPUData          CPUChart
-  memoryTimer <-
-    mkChartTimer connectedNodes rHistory datasetIndices datasetTimestamps MemoryData       MemoryChart
-  gcMajorNumTimer <-
-    mkChartTimer connectedNodes rHistory datasetIndices datasetTimestamps GCMajorNumData   GCMajorNumChart
-  gcMinorNumTimer <-
-    mkChartTimer connectedNodes rHistory datasetIndices datasetTimestamps GCMinorNumData   GCMinorNumChart
-  gcLiveMemoryTimer <-
-    mkChartTimer connectedNodes rHistory datasetIndices datasetTimestamps GCLiveMemoryData GCLiveMemoryChart
-  cpuTimeGCTimer <-
-    mkChartTimer connectedNodes rHistory datasetIndices datasetTimestamps CPUTimeGCData    CPUTimeGCChart
-  cpuTimeAppTimer <-
-    mkChartTimer connectedNodes rHistory datasetIndices datasetTimestamps CPUTimeAppData   CPUTimeAppChart
-  threadsNumTimer <-
-    mkChartTimer connectedNodes rHistory datasetIndices datasetTimestamps ThreadsNumData   ThreadsNumChart
+  cpuTimer          <- mkChartTimer connected rHistory dsIxs dsTss CPUData          CPUChart
+  memoryTimer       <- mkChartTimer connected rHistory dsIxs dsTss MemoryData       MemoryChart
+  gcMajorNumTimer   <- mkChartTimer connected rHistory dsIxs dsTss GCMajorNumData   GCMajorNumChart
+  gcMinorNumTimer   <- mkChartTimer connected rHistory dsIxs dsTss GCMinorNumData   GCMinorNumChart
+  gcLiveMemoryTimer <- mkChartTimer connected rHistory dsIxs dsTss GCLiveMemoryData GCLiveMemoryChart
+  cpuTimeGCTimer    <- mkChartTimer connected rHistory dsIxs dsTss CPUTimeGCData    CPUTimeGCChart
+  cpuTimeAppTimer   <- mkChartTimer connected rHistory dsIxs dsTss CPUTimeAppData   CPUTimeAppChart
+  threadsNumTimer   <- mkChartTimer connected rHistory dsIxs dsTss ThreadsNumData   ThreadsNumChart
 
   cpuChart          <- mkChart window cpuTimer          CPUChart          "CPU usage"
   memoryChart       <- mkChart window memoryTimer       MemoryChart       "Memory usage"
@@ -78,16 +67,11 @@ mkPageBody window networkConfig connectedNodes
   threadsNumChart   <- mkChart window threadsNumTimer   ThreadsNumChart   "Number of threads"
 
   -- Blockchain charts.
-  chainDensityTimer <-
-    mkChartTimer connectedNodes cHistory datasetIndices datasetTimestamps ChainDensityData ChainDensityChart
-  slotNumTimer <-
-    mkChartTimer connectedNodes cHistory datasetIndices datasetTimestamps SlotNumData      SlotNumChart
-  blockNumTimer <-
-    mkChartTimer connectedNodes cHistory datasetIndices datasetTimestamps BlockNumData     BlockNumChart
-  slotInEpochTimer <-
-    mkChartTimer connectedNodes cHistory datasetIndices datasetTimestamps SlotInEpochData  SlotInEpochChart
-  epochTimer <-
-    mkChartTimer connectedNodes cHistory datasetIndices datasetTimestamps EpochData        EpochChart
+  chainDensityTimer <- mkChartTimer connected cHistory dsIxs dsTss ChainDensityData ChainDensityChart
+  slotNumTimer      <- mkChartTimer connected cHistory dsIxs dsTss SlotNumData      SlotNumChart
+  blockNumTimer     <- mkChartTimer connected cHistory dsIxs dsTss BlockNumData     BlockNumChart
+  slotInEpochTimer  <- mkChartTimer connected cHistory dsIxs dsTss SlotInEpochData  SlotInEpochChart
+  epochTimer        <- mkChartTimer connected cHistory dsIxs dsTss EpochData        EpochChart
 
   chainDensityChart <- mkChart window chainDensityTimer ChainDensityChart "Chain density"
   slotNumChart      <- mkChart window slotNumTimer      SlotNumChart      "Slot height"
@@ -95,21 +79,47 @@ mkPageBody window networkConfig connectedNodes
   slotInEpochChart  <- mkChart window slotInEpochTimer  SlotInEpochChart  "Slot in epoch"
   epochChart        <- mkChart window epochTimer        EpochChart        "Epoch"
 
-  -- Visibility of charts gropus.
-  showHideTxs       <- image "has-tooltip-multiline has-tooltip-top rt-view-show-hide-chart-group" showSVG
-                             # set dataTooltip "Click to hide Transactions Metrics"
-                             # set dataState shownState
-  showHideChain     <- image "has-tooltip-multiline has-tooltip-top rt-view-show-hide-chart-group" showSVG
-                             # set dataTooltip "Click to hide Chain Metrics"
-                             # set dataState shownState
-  showHideResources <- image "has-tooltip-multiline has-tooltip-top rt-view-show-hide-chart-group" showSVG
-                             # set dataTooltip "Click to hide Resources Metrics"
-                             # set dataState shownState
+  -- Leadership charts.
+  cannotForgeTimer     <- mkChartTimer' connected cHistory dsIxs dsTss NodeCannotForgeData       NodeCannotForgeChart
+  forgedSlotTimer      <- mkChartTimer' connected cHistory dsIxs dsTss ForgedSlotLastData        ForgedSlotLastChart
+  nodeIsLeaderTimer    <- mkChartTimer' connected cHistory dsIxs dsTss NodeIsLeaderData          NodeIsLeaderChart
+  nodeIsNotLeaderTimer <- mkChartTimer' connected cHistory dsIxs dsTss NodeIsNotLeaderData       NodeIsNotLeaderChart
+  forgedInvalidTimer   <- mkChartTimer' connected cHistory dsIxs dsTss ForgedInvalidSlotLastData ForgedInvalidSlotLastChart
+  adoptedTimer         <- mkChartTimer' connected cHistory dsIxs dsTss AdoptedSlotLastData       AdoptedSlotLastChart
+  notAdoptedTimer      <- mkChartTimer' connected cHistory dsIxs dsTss NotAdoptedSlotLastData    NotAdoptedSlotLastChart
+  aboutToLeadTimer     <- mkChartTimer' connected cHistory dsIxs dsTss AboutToLeadSlotLastData   AboutToLeadSlotLastChart
+  couldNotForgeTimer   <- mkChartTimer' connected cHistory dsIxs dsTss CouldNotForgeSlotLastData CouldNotForgeSlotLastChart
+
+  cannotForgeChart     <- mkChart window cannotForgeTimer     NodeCannotForgeChart       "Cannot forge"
+  forgedSlotChart      <- mkChart window forgedSlotTimer      ForgedSlotLastChart        "Forged"
+  nodeIsLeaderChart    <- mkChart window nodeIsLeaderTimer    NodeIsLeaderChart          "Is leader"
+  nodeIsNotLeaderChart <- mkChart window nodeIsNotLeaderTimer NodeIsNotLeaderChart       "Is not leader"
+  forgedInvalidChart   <- mkChart window forgedInvalidTimer   ForgedInvalidSlotLastChart "Forged invalid"
+  adoptedChart         <- mkChart window adoptedTimer         AdoptedSlotLastChart       "Is adopted"
+  notAdoptedChart      <- mkChart window notAdoptedTimer      NotAdoptedSlotLastChart    "Is not adopted"
+  aboutToLeadChart     <- mkChart window aboutToLeadTimer     AboutToLeadSlotLastChart   "About to lead"
+  couldNotForgeChart   <- mkChart window couldNotForgeTimer   CouldNotForgeSlotLastChart "Could not forge"
+
+  -- Visibility of charts groups.
+  showHideTxs        <- image "has-tooltip-multiline has-tooltip-top rt-view-show-hide-chart-group" showSVG
+                              # set dataTooltip "Click to hide Transactions Metrics"
+                              # set dataState shownState
+  showHideChain      <- image "has-tooltip-multiline has-tooltip-top rt-view-show-hide-chart-group" showSVG
+                              # set dataTooltip "Click to hide Chain Metrics"
+                              # set dataState shownState
+  showHideLeadership <- image "has-tooltip-multiline has-tooltip-top rt-view-show-hide-chart-group" showSVG
+                              # set dataTooltip "Click to hide Leadership Metrics"
+                              # set dataState shownState
+  showHideResources  <- image "has-tooltip-multiline has-tooltip-top rt-view-show-hide-chart-group" showSVG
+                              # set dataTooltip "Click to hide Resources Metrics"
+                              # set dataState shownState
 
   on UI.click showHideTxs . const $
     changeVisibilityForCharts window showHideTxs "transactions-charts" "Transactions Metrics"
   on UI.click showHideChain . const $
     changeVisibilityForCharts window showHideChain "chain-charts" "Chain Metrics"
+  on UI.click showHideLeadership . const $
+    changeVisibilityForCharts window showHideLeadership "leadership-charts" "Leadership Metrics"
   on UI.click showHideResources . const $
     changeVisibilityForCharts window showHideResources "resources-charts" "Resources Metrics"
 
@@ -235,6 +245,26 @@ mkPageBody window networkConfig connectedNodes
                       , element slotNumChart
                       ]
                   ]
+              -- Leadership charts.
+              , UI.p #. "mb-5" #+
+                  [ element showHideLeadership
+                  , UI.span #. "rt-view-chart-group-title" # set text "Leadership Metrics"
+                  ]
+              , UI.div ## "leadership-charts" #. "columns" #+
+                  [ UI.div #. "column" #+
+                      [ element forgedSlotChart
+                      , element nodeIsLeaderChart
+                      , element forgedInvalidChart
+                      , element adoptedChart
+                      , element aboutToLeadChart
+                      ]
+                  , UI.div #. "column" #+
+                      [ element cannotForgeChart     
+                      , element nodeIsNotLeaderChart  
+                      , element couldNotForgeChart
+                      , element notAdoptedChart
+                      ]
+                  ]
               -- Transactions charts.
               , UI.p #. "mb-5" #+
                   [ element showHideTxs
@@ -284,8 +314,8 @@ mkPageBody window networkConfig connectedNodes
   Chart.newTimeChartJS GCMajorNumChart   ""
   Chart.newTimeChartJS GCMinorNumChart   ""
   Chart.newTimeChartJS GCLiveMemoryChart "MB"
-  Chart.newTimeChartJS CPUTimeGCChart    "milliseconds"
-  Chart.newTimeChartJS CPUTimeAppChart   "milliseconds"
+  Chart.newTimeChartJS CPUTimeGCChart    "Milliseconds"
+  Chart.newTimeChartJS CPUTimeAppChart   "Milliseconds"
   Chart.newTimeChartJS ThreadsNumChart   ""
 
   Chart.newTimeChartJS ChainDensityChart "Percent"
@@ -293,6 +323,16 @@ mkPageBody window networkConfig connectedNodes
   Chart.newTimeChartJS BlockNumChart     ""
   Chart.newTimeChartJS SlotInEpochChart  ""
   Chart.newTimeChartJS EpochChart        ""
+
+  Chart.newTimeChartJS NodeCannotForgeChart       "Slots"
+  Chart.newTimeChartJS ForgedSlotLastChart        "Slots"
+  Chart.newTimeChartJS NodeIsLeaderChart          "Slots"
+  Chart.newTimeChartJS NodeIsNotLeaderChart       "Slots"
+  Chart.newTimeChartJS ForgedInvalidSlotLastChart "Slots"
+  Chart.newTimeChartJS AdoptedSlotLastChart       "Slots"
+  Chart.newTimeChartJS NotAdoptedSlotLastChart    "Slots"
+  Chart.newTimeChartJS AboutToLeadSlotLastChart   "Slots"
+  Chart.newTimeChartJS CouldNotForgeSlotLastChart "Slots"
 
   -- Start all timer.
 
@@ -315,6 +355,16 @@ mkPageBody window networkConfig connectedNodes
   UI.start slotInEpochTimer
   UI.start epochTimer
 
+  UI.start cannotForgeTimer
+  UI.start forgedSlotTimer
+  UI.start nodeIsLeaderTimer
+  UI.start nodeIsNotLeaderTimer
+  UI.start forgedInvalidTimer
+  UI.start adoptedTimer
+  UI.start notAdoptedTimer
+  UI.start aboutToLeadTimer
+  UI.start couldNotForgeTimer
+
   on UI.disconnect window . const $ do
     UI.stop txsProcessedNumTimer
     UI.stop mempoolBytesTimer
@@ -334,6 +384,16 @@ mkPageBody window networkConfig connectedNodes
     UI.stop blockNumTimer
     UI.stop slotInEpochTimer
     UI.stop epochTimer
+
+    UI.stop cannotForgeTimer
+    UI.stop forgedSlotTimer
+    UI.stop nodeIsLeaderTimer
+    UI.stop nodeIsNotLeaderTimer
+    UI.stop forgedInvalidTimer
+    UI.stop adoptedTimer
+    UI.stop notAdoptedTimer
+    UI.stop aboutToLeadTimer
+    UI.stop couldNotForgeTimer
 
   return body
 
@@ -543,7 +603,7 @@ changeVisibilityForCharts window showHideIcon areaId areaName = do
                                   # set dataState   shownState
                                   # set dataTooltip ("Click to hide " <> areaName)
 
-mkChartTimer
+mkChartTimer, mkChartTimer'
   :: ConnectedNodes
   -> History
   -> DatasetsIndices
@@ -551,10 +611,32 @@ mkChartTimer
   -> DataName
   -> ChartId
   -> UI UI.Timer
-mkChartTimer connectedNodes history datasetIndices datasetTimestamps dataName chartId = do
+mkChartTimer  = doMakeChartTimer addPointsToChart
+mkChartTimer' = doMakeChartTimer addAllPointsToChart
+
+type PointsAdder =
+     ConnectedNodes
+  -> History
+  -> DatasetsIndices
+  -> DatasetsTimestamps
+  -> DataName
+  -> ChartId
+  -> UI ()
+
+doMakeChartTimer
+  :: PointsAdder
+  -> ConnectedNodes
+  -> History
+  -> DatasetsIndices
+  -> DatasetsTimestamps
+  -> DataName
+  -> ChartId
+  -> UI UI.Timer
+doMakeChartTimer addPoints connectedNodes history datasetIndices
+                 datasetTimestamps dataName chartId = do
   uiUpdateTimer <- UI.timer # set UI.interval defaultUpdatePeriodInMs
   on UI.tick uiUpdateTimer . const $
-    addAllPointsToChart connectedNodes history datasetIndices datasetTimestamps dataName chartId
+    addPoints connectedNodes history datasetIndices datasetTimestamps dataName chartId
   return uiUpdateTimer
  where
   defaultUpdatePeriodInMs = 15 * 1000

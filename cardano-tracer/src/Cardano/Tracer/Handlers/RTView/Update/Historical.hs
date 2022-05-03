@@ -13,6 +13,7 @@ import           Cardano.Tracer.Handlers.RTView.State.Historical
 import           Cardano.Tracer.Handlers.RTView.State.Last
 import           Cardano.Tracer.Handlers.RTView.State.TraceObjects
 import           Cardano.Tracer.Handlers.RTView.Update.Chain
+import           Cardano.Tracer.Handlers.RTView.Update.Leadership
 import           Cardano.Tracer.Handlers.RTView.Update.Resources
 import           Cardano.Tracer.Handlers.RTView.Update.Transactions
 import           Cardano.Tracer.Types
@@ -49,3 +50,4 @@ runHistoricalUpdater _savedTO acceptedMetrics resourcesHistory
       updateTransactionsHistory nodeId txHistory metricName metricValue now
       updateResourcesHistory nodeId resourcesHistory lastResources metricName metricValue now
       updateBlockchainHistory nodeId chainHistory metricName metricValue now
+      updateLeadershipHistory nodeId chainHistory metricName metricValue now

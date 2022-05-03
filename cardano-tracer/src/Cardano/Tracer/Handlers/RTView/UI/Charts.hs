@@ -9,6 +9,7 @@ module Cardano.Tracer.Handlers.RTView.UI.Charts
   , initDatasetsTimestamps
   , getDatasetIx
   , addNodeDatasetsToCharts
+  , addPointsToChart
   , addAllPointsToChart
   , getLatestDisplayedTS
   , saveLatestDisplayedTS
@@ -153,7 +154,9 @@ getLatestDisplayedTS tss nodeId dataName = liftIO $
 --
 -- All points will be added to all datasets (corresponding to the number of connected nodes)
 -- using one single FFI-call, for better performance.
-addAllPointsToChart
+--
+-- 'addAllPointsToChart' doesn not do average calculation, it pushes all the points as they are.
+addPointsToChart, addAllPointsToChart
   :: ConnectedNodes
   -> History
   -> DatasetsIndices
@@ -161,7 +164,19 @@ addAllPointsToChart
   -> DataName
   -> ChartId
   -> UI ()
-addAllPointsToChart connectedNodes hist datasetIndices datasetTimestamps dataName chartId = do
+addPointsToChart    = doAddPointsToChart replacePointsByAvgPoints
+addAllPointsToChart = doAddPointsToChart id
+
+doAddPointsToChart
+  :: ([HistoricalPoint] -> [HistoricalPoint])
+  -> ConnectedNodes
+  -> History
+  -> DatasetsIndices
+  -> DatasetsTimestamps
+  -> DataName
+  -> ChartId
+  -> UI ()
+doAddPointsToChart replaceByAvg connectedNodes hist datasetIndices datasetTimestamps dataName chartId = do
   connected <- liftIO $ S.toList <$> readTVarIO connectedNodes
   dataForPush <-
     forM connected $ \nodeId ->
@@ -177,7 +192,7 @@ addAllPointsToChart connectedNodes hist datasetIndices datasetTimestamps dataNam
                 Nothing -> return Nothing
                 Just ix ->
                   return . Just $ ( (nodeId, latestTS)
-                                  , (ix, replacePointsByAvgPoints points)
+                                  , (ix, replaceByAvg points)
                                   )
             Just storedTS ->
               -- Some of the history for this node and chart is already displayed,
@@ -187,7 +202,7 @@ addAllPointsToChart connectedNodes hist datasetIndices datasetTimestamps dataNam
                 Nothing -> return Nothing
                 Just ix ->
                   return . Just $ ( (nodeId, latestTS)
-                                  , (ix, replacePointsByAvgPoints $! cutOldPoints storedTS points)
+                                  , (ix, replaceByAvg $! cutOldPoints storedTS points)
                                   )
   let (nodeIdsWithLatestTss, datasetIxsWithPoints) = unzip $ catMaybes dataForPush
   Chart.addAllPointsChartJS chartId datasetIxsWithPoints

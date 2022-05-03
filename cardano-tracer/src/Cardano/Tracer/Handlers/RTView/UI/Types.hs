@@ -38,6 +38,15 @@ data ChartId
   | BlockNumChart
   | SlotInEpochChart
   | EpochChart
+  | NodeCannotForgeChart
+  | ForgedSlotLastChart
+  | NodeIsLeaderChart
+  | NodeIsNotLeaderChart
+  | ForgedInvalidSlotLastChart
+  | AdoptedSlotLastChart
+  | NotAdoptedSlotLastChart
+  | AboutToLeadSlotLastChart
+  | CouldNotForgeSlotLastChart
   -- TX
   | TxsProcessedNumChart
   | MempoolBytesChart

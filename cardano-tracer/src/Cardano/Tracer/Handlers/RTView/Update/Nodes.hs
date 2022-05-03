@@ -215,31 +215,13 @@ setLeadershipStats window connected displayedElements acceptedMetrics = do
       forM_ metrics $ \(metricName, metricValue) ->
         case metricName of
           -- How many times this node was a leader?
-          "nodeIsLeaderNum"                    -> setDisplayed nodeId (anId <> "__node-leadership") metricValue
+          "nodeIsLeaderNum"    -> setDisplayed nodeId (anId <> "__node-leadership") metricValue
           -- How many blocks were forged by this node.
-          "blocksForgedNum"                    -> setDisplayed nodeId (anId <> "__node-forged-blocks") metricValue
+          "blocksForgedNum"    -> setDisplayed nodeId (anId <> "__node-forged-blocks") metricValue
           -- How many times this node could not forge.
-          "nodeCannotForgeNum"                 -> setDisplayed nodeId (anId <> "__node-cannot-forge") metricValue
+          "nodeCannotForgeNum" -> setDisplayed nodeId (anId <> "__node-cannot-forge") metricValue
           -- How many slots were missed in this node.
-          "slotsMissed"                        -> setDisplayed nodeId (anId <> "__node-missed-slots") metricValue
-          -- Slot when the node was a leader, but couldn't forge the block.
-          "cardano.node.nodeCannotForge"       -> return ()
-          -- Slot when this node forged last block.
-          "cardano.node.forgedSlotLast"        -> return ()
-          -- Slot when this node is leader.
-          "cardano.node.nodeIsLeader"          -> return ()
-          -- Slot when this node made leadership check and concludes it's not leader.
-          "cardano.node.nodeNotLeader"         -> return ()
-          -- Slot when invalid block was forged.
-          "cardano.node.forgedInvalidSlotLast" -> return ()
-          -- Slot when the node adopted the block it forged.
-          "cardano.node.adoptedSlotLast"       -> return ()
-          -- Slot when the node didn't adopted the block it forged, but the block was valid.
-          "cardano.node.notAdoptedSlotLast"    -> return ()
-          -- Slot when the leadership check is started.
-          "cardano.node.aboutToLeadSlotLast"   -> return ()
-          -- Slot when the leadership check is failed.
-          "cardano.node.couldNotForgeSlotLast" -> return ()
+          "slotsMissed"        -> setDisplayed nodeId (anId <> "__node-missed-slots") metricValue
           _ -> return ()
  where
   setDisplayed nodeId elId mValue =
