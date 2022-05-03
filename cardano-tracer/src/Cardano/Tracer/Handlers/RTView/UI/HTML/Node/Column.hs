@@ -73,6 +73,18 @@ addNodeColumn window loggingConfig (NodeId anId) = do
   addNodeCell "chunk-validation" [ UI.span ## (id' <> "__node-chunk-validation")
                                            # set text "—"
                                  ]
+  addNodeCell "leadership" [ UI.span ## (id' <> "__node-leadership")
+                                     # set text "—"
+                           ]
+  addNodeCell "forged-blocks" [ UI.span ## (id' <> "__node-forged-blocks")
+                                        # set text "—"
+                              ]
+  addNodeCell "cannot-forge" [ UI.span ## (id' <> "__node-cannot-forge")
+                                       # set text "—"
+                             ]
+  addNodeCell "missed-slots" [ UI.span ## (id' <> "__node-missed-slots")
+                                       # set text "—"
+                             ]
  where
   addNodeCellH rowId cellContent =
     whenJustM (UI.getElementById window ("node-" <> rowId <> "-row")) $ \el ->

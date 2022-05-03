@@ -185,6 +185,34 @@ mkPageBody window networkConfig connectedNodes
                                          , string "Chunk validation"
                                          ]
                               ]
+                          , UI.tr ## "node-leadership-row" #+
+                              [ UI.td #+ [ image "rt-view-overview-icon" leaderSVG
+                                         , string "Leadership"
+                                         , image "has-tooltip-multiline has-tooltip-right rt-view-what-icon" whatSVG
+                                                 # set dataTooltip "How many times this node was leader"
+                                         ]
+                              ]
+                          , UI.tr ## "node-forged-blocks-row" #+
+                              [ UI.td #+ [ image "rt-view-overview-icon" forgeSVG
+                                         , string "Forged blocks"
+                                         , image "has-tooltip-multiline has-tooltip-right rt-view-what-icon" whatSVG
+                                                 # set dataTooltip "How many blocks did forge by this node"
+                                         ]
+                              ]
+                          , UI.tr ## "node-cannot-forge-row" #+
+                              [ UI.td #+ [ image "rt-view-overview-icon" notForgeSVG
+                                         , string "Cannot forge"
+                                         , image "has-tooltip-multiline has-tooltip-right rt-view-what-icon" whatSVG
+                                                 # set dataTooltip "How many times this node could not forge"
+                                         ]
+                              ]
+                          , UI.tr ## "node-missed-slots-row" #+
+                              [ UI.td #+ [ image "rt-view-overview-icon" missedSVG
+                                         , string "Missed slots"
+                                         , image "has-tooltip-multiline has-tooltip-right rt-view-what-icon" whatSVG
+                                                 # set dataTooltip "How many slots were missed by this node"
+                                         ]
+                              ]
                           ]
                       ]
                   ]

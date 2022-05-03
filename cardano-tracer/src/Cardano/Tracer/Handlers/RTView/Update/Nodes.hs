@@ -207,20 +207,46 @@ setLeadershipStats
   -> DisplayedElements
   -> AcceptedMetrics
   -> UI ()
-setLeadershipStats _window connected _displayedElements acceptedMetrics = do
+setLeadershipStats window connected displayedElements acceptedMetrics = do
   allMetrics <- liftIO $ readTVarIO acceptedMetrics
-  forM_ connected $ \nodeId ->
+  forM_ connected $ \nodeId@(NodeId anId) ->
     whenJust (M.lookup nodeId allMetrics) $ \(ekgStore, _) -> do
       metrics <- liftIO $ getListOfMetrics ekgStore
-      forM_ metrics $ \(metricName, _metricValue) ->
+      forM_ metrics $ \(metricName, metricValue) ->
         case metricName of
-          "cardano.node.forgedSlotLast"        -> return ()
-          "cardano.node.forgedInvalidSlotLast" -> return ()
-          "cardano.node.couldNotForgeSlotLast" -> return ()
-          "cardano.node.adoptedSlotLast"       -> return ()
-          "cardano.node.notAdoptedSlotLast"    -> return ()
-          "cardano.node.aboutToLeadSlotLast"   -> return ()
+          -- How many times this node was a leader?
+          "nodeIsLeaderNum"                    -> setDisplayed nodeId (anId <> "__node-leadership") metricValue
+          -- The slot when this node is leader.
           "cardano.node.nodeIsLeader"          -> return ()
-          "cardano.node.nodeNotLeader"         -> return ()
+          -- How many blocks were forged by this node.
+          "blocksForgedNum"                    -> setDisplayed nodeId (anId <> "__node-forged-blocks") metricValue
+          -- Slot when this node forged last block.
+          "cardano.node.forgedSlotLast"        -> return ()
+          -- How many times this node could not forge.
+          "nodeCannotForgeNum"                 -> setDisplayed nodeId (anId <> "__node-cannot-forge") metricValue
+          -- Slot when last leadership check is failed.
+          "cardano.node.couldNotForgeSlotLast" -> return ()
+          -- Slot when the node was a leader, but couldn't forge the block.
           "cardano.node.nodeCannotForge"       -> return ()
+          -- How many slots were missed in this node.
+          "slotsMissed"                        -> setDisplayed nodeId (anId <> "__node-missed-slots") metricValue
+          -- Slot when invalid block was forged.
+          "cardano.node.forgedInvalidSlotLast" -> return ()
+          -- Slot where the node adopted the block it forged.
+          "cardano.node.adoptedSlotLast"       -> return ()
+          -- Slot when the node didn't adopted the block it forged, but the block was valid.
+          "cardano.node.notAdoptedSlotLast"    -> return ()
+          -- Slot when the leadership check is started.
+          "cardano.node.aboutToLeadSlotLast"   -> return ()
           _ -> return ()
+ where
+  setDisplayed nodeId elId mValue =
+    liftIO (getDisplayedValue displayedElements nodeId elId) >>= \case
+      Nothing ->
+        setAndRemember mValue nodeId elId
+      Just displayedValue ->
+        unless (displayedValue == mValue) $ setAndRemember mValue nodeId elId
+
+  setAndRemember mValue nodeId elId = do
+    findAndSetText mValue window elId
+    liftIO $ saveDisplayedValue displayedElements nodeId elId mValue

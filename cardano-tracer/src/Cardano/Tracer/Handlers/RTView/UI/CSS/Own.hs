@@ -60,7 +60,7 @@ span[data-tooltip] {
 }
 
 .rt-view-main-table-description {
-  min-width: 350px;
+  min-width: 380px;
 }
 
 .rt-view-node-chart-label svg {
@@ -215,7 +215,7 @@ span[data-tooltip] {
 .dark .rt-view-main-table td {
   padding-top: 17px;
   padding-bottom: 17px;
-  border-bottom: 1px solid #444;
+  border-bottom: 0px solid #444;
 }
 
 .dark .rt-view-main-table th {
@@ -274,6 +274,12 @@ span[data-tooltip] {
 
 .dark .rt-view-percent-done {
   color: #07e949;
+}
+
+.dark .rt-view-what-icon svg {
+  width: 18px;
+  margin-left: 12px;
+  color: #999;
 }
 
 /**** Light Theme ****/
@@ -422,6 +428,7 @@ span[data-tooltip] {
 .light .rt-view-main-table td {
   padding-top: 17px;
   padding-bottom: 17px;
+  border-bottom: 0px solid #444;
 }
 
 .light .rt-view-main-table th {
@@ -480,6 +487,12 @@ span[data-tooltip] {
 
 .light .rt-view-percent-done {
   color: #048b04;
+}
+
+.light .rt-view-what-icon svg {
+  width: 18px;
+  margin-left: 12px;
+  color: #9a9a9a;
 }
 |]
 
