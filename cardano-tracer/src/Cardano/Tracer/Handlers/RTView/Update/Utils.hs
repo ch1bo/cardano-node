@@ -5,12 +5,16 @@ module Cardano.Tracer.Handlers.RTView.Update.Utils
   ( askDataPoint
   , utc2ns
   , utc2s
+  , showT
+  , readInt
   ) where
 
 import           Control.Concurrent.STM.TVar (readTVarIO)
 import           Data.Aeson (FromJSON, decode')
 import           Data.Functor ((<&>))
 import qualified Data.Map.Strict as M
+import           Data.Text (Text, pack)
+import           Data.Text.Read (decimal)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Clock.POSIX
 import           Data.Word (Word64)
@@ -49,3 +53,12 @@ utc2s utc = fromInteger . round $ utcTimeToPOSIXSeconds utc
 -- | Converts a timestamp to nanoseconds since Unix epoch.
 utc2ns :: UTCTime -> Word64
 utc2ns utc = fromInteger . round $ 1000_000_000 * utcTimeToPOSIXSeconds utc
+
+showT :: Show a => a -> Text
+showT = pack . show
+
+readInt :: Text -> Int -> Int
+readInt t defInt =
+  case decimal t of
+    Left _ -> defInt
+    Right (i, _) -> i

@@ -47,6 +47,8 @@ module Cardano.Tracer.Handlers.RTView.UI.Img.Icons
   , forgeSVG
   , notForgeSVG
   , missedSVG
+  , eraSVG
+  , lengthSVG
   ) where
 
 import           Data.String.QQ
@@ -274,6 +276,16 @@ notForgeSVG = [s|
 missedSVG :: String
 missedSVG = [s|
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Pro 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path fill="currentColor" d="M0 32C0 14.33 14.33 0 32 0H352C369.7 0 384 14.33 384 32C384 49.67 369.7 64 352 64V74.98C352 117.4 335.1 158.1 305.1 188.1L237.3 256L305.1 323.9C335.1 353.9 352 394.6 352 437V448C369.7 448 384 462.3 384 480C384 497.7 369.7 512 352 512H32C14.33 512 0 497.7 0 480C0 462.3 14.33 448 32 448V437C32 394.6 48.86 353.9 78.86 323.9L146.7 256L78.86 188.1C48.86 158.1 32 117.4 32 74.98V64C14.33 64 0 49.67 0 32zM96 64V74.98C96 100.4 106.1 124.9 124.1 142.9L192 210.7L259.9 142.9C277.9 124.9 288 100.4 288 74.98V64H96zM96 448H288V437C288 411.6 277.9 387.1 259.9 369.1L192 301.3L124.1 369.1C106.1 387.1 96 411.6 96 437V448z"/></svg>
+|]
+
+eraSVG :: String
+eraSVG = [s|
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Pro 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path fill="currentColor" d="M496 224c-79.63 0-144 64.38-144 144s64.38 144 144 144s144-64.38 144-144S575.6 224 496 224zM544 384h-54.25C484.4 384 480 379.6 480 374.3V304c0-8.836 7.164-16 16-16c8.838 0 16 7.164 16 16v48h32c8.838 0 16 7.164 16 15.1S552.8 384 544 384zM224 256c70.7 0 128-57.31 128-128S294.7 0 224 0C153.3 0 96 57.31 96 128S153.3 256 224 256zM320 368c0-19.3 3.221-37.82 8.961-55.2C311.9 307.2 293.6 304 274.7 304H173.3C77.61 304 0 381.7 0 477.4C0 496.5 15.52 512 34.66 512H395C349.7 480.2 320 427.6 320 368z"/></svg>
+|]
+
+lengthSVG :: String
+lengthSVG = [s|
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Pro 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path fill="currentColor" d="M0 176C0 149.5 21.49 128 48 128H112V208C112 216.8 119.2 224 128 224C136.8 224 144 216.8 144 208V128H208V208C208 216.8 215.2 224 224 224C232.8 224 240 216.8 240 208V128H304V208C304 216.8 311.2 224 320 224C328.8 224 336 216.8 336 208V128H400V208C400 216.8 407.2 224 416 224C424.8 224 432 216.8 432 208V128H496V208C496 216.8 503.2 224 512 224C520.8 224 528 216.8 528 208V128H592C618.5 128 640 149.5 640 176V336C640 362.5 618.5 384 592 384H48C21.49 384 0 362.5 0 336V176z"/></svg>
 |]
 
 rectangleSVG :: String

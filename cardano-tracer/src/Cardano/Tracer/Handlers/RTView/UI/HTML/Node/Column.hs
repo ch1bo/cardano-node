@@ -41,9 +41,6 @@ addNodeColumn window loggingConfig (NodeId anId) = do
   addNodeCell "version"  [ UI.span ## (id' <> "__node-version")
                                    # set text "—"
                          ]
-  addNodeCell "protocol" [ UI.span ## (id' <> "__node-protocol")
-                                   # set text "—"
-                         ]
   addNodeCell "commit"   [ UI.anchor ## (id' <> "__node-commit")
                                      #. ("rt-view-href is-family-monospace has-text-weight-normal"
                                          <> " has-tooltip-multiline has-tooltip-right")
@@ -53,6 +50,20 @@ addNodeColumn window loggingConfig (NodeId anId) = do
                                      # set text "—"
                          , image "rt-view-href-icon" externalLinkSVG
                          ]
+  addNodeCell "protocol" [ UI.span ## (id' <> "__node-protocol")
+                                   # set text "—"
+                         ]
+  addNodeCell "era" [ UI.span ## (id' <> "__node-era")
+                              # set text "—"
+                    ]
+  addNodeCell "epoch-length" [ UI.span ## (id' <> "__node-epoch-length")
+                                       # set text "—"
+                             , UI.span # set html "&nbsp;days"
+                             ]
+  addNodeCell "kes-period-length" [ UI.span ## (id' <> "__node-kes-period-length")
+                                            # set text "—"
+                                  , UI.span # set html "&nbsp;hours"
+                                  ]
   addNodeCell "system-start-time" [ UI.span ## (id' <> "__node-system-start-time")
                                             # set text "—"
                                   ]

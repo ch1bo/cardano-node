@@ -17,6 +17,7 @@ import           Data.List.NonEmpty (NonEmpty)
 import qualified Data.Map.Strict as M
 import           Data.Set (Set, (\\))
 import qualified Data.Set as S
+import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Time.Calendar
 import           Data.Time.Clock (UTCTime (..), addUTCTime, diffUTCTime)
@@ -35,6 +36,7 @@ import           Cardano.Tracer.Handlers.RTView.UI.Charts
 import           Cardano.Tracer.Handlers.RTView.UI.Types
 import           Cardano.Tracer.Handlers.RTView.UI.Utils
 import           Cardano.Tracer.Handlers.RTView.Update.NodeInfo
+import           Cardano.Tracer.Handlers.RTView.Update.Utils
 import           Cardano.Tracer.Types
 
 updateNodesUI
@@ -68,6 +70,7 @@ updateNodesUI window connectedNodes displayedElements acceptedMetrics
   setBlockReplayProgress window connected displayedElements acceptedMetrics
   setChunkValidationProgress window connected savedTO
   setLeadershipStats window connected displayedElements acceptedMetrics
+  setEraEpochKES window connected displayedElements savedTO
 
 addColumnsForConnected
   :: UI.Window
@@ -207,30 +210,65 @@ setLeadershipStats
   -> DisplayedElements
   -> AcceptedMetrics
   -> UI ()
-setLeadershipStats window connected displayedElements acceptedMetrics = do
+setLeadershipStats window connected displayed acceptedMetrics = do
   allMetrics <- liftIO $ readTVarIO acceptedMetrics
   forM_ connected $ \nodeId@(NodeId anId) ->
     whenJust (M.lookup nodeId allMetrics) $ \(ekgStore, _) -> do
       metrics <- liftIO $ getListOfMetrics ekgStore
-      forM_ metrics $ \(metricName, metricValue) ->
-        case metricName of
+      forM_ metrics $ \(mName, mValue) ->
+        case mName of
           -- How many times this node was a leader?
-          "nodeIsLeaderNum"    -> setDisplayed nodeId (anId <> "__node-leadership") metricValue
+          "nodeIsLeaderNum"    -> setDisplayedValue window nodeId displayed (anId <> "__node-leadership") mValue
           -- How many blocks were forged by this node.
-          "blocksForgedNum"    -> setDisplayed nodeId (anId <> "__node-forged-blocks") metricValue
+          "blocksForgedNum"    -> setDisplayedValue window nodeId displayed (anId <> "__node-forged-blocks") mValue
           -- How many times this node could not forge.
-          "nodeCannotForgeNum" -> setDisplayed nodeId (anId <> "__node-cannot-forge") metricValue
+          "nodeCannotForgeNum" -> setDisplayedValue window nodeId displayed (anId <> "__node-cannot-forge") mValue
           -- How many slots were missed in this node.
-          "slotsMissed"        -> setDisplayed nodeId (anId <> "__node-missed-slots") metricValue
+          "slotsMissed"        -> setDisplayedValue window nodeId displayed (anId <> "__node-missed-slots") mValue
           _ -> return ()
- where
-  setDisplayed nodeId elId mValue =
-    liftIO (getDisplayedValue displayedElements nodeId elId) >>= \case
-      Nothing ->
-        setAndRemember mValue nodeId elId
-      Just displayedValue ->
-        unless (displayedValue == mValue) $ setAndRemember mValue nodeId elId
 
-  setAndRemember mValue nodeId elId = do
+setEraEpochKES
+  :: UI.Window
+  -> Set NodeId
+  -> DisplayedElements
+  -> SavedTraceObjects
+  -> UI ()
+setEraEpochKES window connected displayed savedTO = do
+  savedTraceObjects <- liftIO $ readTVarIO savedTO
+  forM_ connected $ \nodeId@(NodeId anId) ->
+    whenJust (M.lookup nodeId savedTraceObjects) $ \savedTOForNode ->
+      whenJust (M.lookup "Cardano.Node.Startup.ShelleyBased" savedTOForNode) $ \trObValue ->
+        -- Example: "Era Alonzo, Slot length 1s, Epoch length 432000, Slots per KESPeriod 129600"
+        case T.words $ T.replace "," "" trObValue of
+          -- Era Alonzo Slot length 1s Epoch length 432000 Slots per KESPeriod 129600"
+          [_, era, _, _, slotLen, _, _, epochLen, _, _, _, kesPeriod] -> do
+            setDisplayedValue window nodeId displayed (anId <> "__node-era") era
+            let slotInSec       = readInt (T.init slotLen) 0
+                epochInSlot     = readInt epochLen 0
+                kesPeriodInSlot = readInt kesPeriod 0
+            unless (slotInSec == 0) $ do
+              let epochInDays      = epochInSlot     `div` slotInSec `div` 3600 `div` 24
+                  kesPeriodInHours = kesPeriodInSlot `div` slotInSec `div` 3600
+              setDisplayedValue window nodeId displayed
+                                (anId <> "__node-epoch-length") $ showT epochInDays
+              setDisplayedValue window nodeId displayed
+                                (anId <> "__node-kes-period-length") $ showT kesPeriodInHours
+          _ -> return ()
+
+-- Misc
+
+setDisplayedValue
+  :: UI.Window
+  -> NodeId
+  -> DisplayedElements
+  -> Text
+  -> Text
+  -> UI ()
+setDisplayedValue window nodeId displayedElements elId mValue =
+  liftIO (getDisplayedValue displayedElements nodeId elId) >>= \case
+    Nothing        -> setAndRemember
+    Just displayed -> unless (displayed == mValue) $ setAndRemember
+ where
+  setAndRemember = do
     findAndSetText mValue window elId
     liftIO $ saveDisplayedValue displayedElements nodeId elId mValue

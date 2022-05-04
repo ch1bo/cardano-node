@@ -155,14 +155,29 @@ mkPageBody window networkConfig connected
                                          , string "Version"
                                          ]
                               ]
+                          , UI.tr ## "node-commit-row" #+
+                              [ UI.td #+ [ image "rt-view-overview-icon" commitSVG
+                                         , string "Commit"
+                                         ]
+                              ]
                           , UI.tr ## "node-protocol-row" #+
                               [ UI.td #+ [ image "rt-view-overview-icon" protocolSVG
                                          , string "Protocol"
                                          ]
                               ]
-                          , UI.tr ## "node-commit-row" #+
-                              [ UI.td #+ [ image "rt-view-overview-icon" commitSVG
-                                         , string "Commit"
+                          , UI.tr ## "node-era-row" #+
+                              [ UI.td #+ [ image "rt-view-overview-icon" eraSVG
+                                         , string "Era"
+                                         ]
+                              ]
+                          , UI.tr ## "node-epoch-length-row" #+
+                              [ UI.td #+ [ image "rt-view-overview-icon" lengthSVG
+                                         , string "Epoch length"
+                                         ]
+                              ]
+                          , UI.tr ## "node-kes-period-length-row" #+
+                              [ UI.td #+ [ image "rt-view-overview-icon" lengthSVG
+                                         , string "KES period length"
                                          ]
                               ]
                           , UI.tr ## "node-system-start-time-row" #+
