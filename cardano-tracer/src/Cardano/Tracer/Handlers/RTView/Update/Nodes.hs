@@ -1,4 +1,6 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -17,7 +19,6 @@ import           Data.List.NonEmpty (NonEmpty)
 import qualified Data.Map.Strict as M
 import           Data.Set (Set, (\\))
 import qualified Data.Set as S
-import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Time.Calendar
 import           Data.Time.Clock (UTCTime (..), addUTCTime, diffUTCTime)
@@ -29,6 +30,8 @@ import           Text.Read (readMaybe)
 
 import           Cardano.Tracer.Configuration
 import           Cardano.Tracer.Handlers.Metrics.Utils
+import           Cardano.Tracer.Handlers.RTView.Chain
+import           Cardano.Tracer.Handlers.RTView.State.Common
 import           Cardano.Tracer.Handlers.RTView.State.Displayed
 import           Cardano.Tracer.Handlers.RTView.State.TraceObjects
 import           Cardano.Tracer.Handlers.RTView.UI.HTML.Node.Column
@@ -45,13 +48,14 @@ updateNodesUI
   -> DisplayedElements
   -> AcceptedMetrics
   -> SavedTraceObjects
+  -> NodesEraSettings
   -> DataPointRequestors
   -> NonEmpty LoggingParams
   -> Colors
   -> DatasetsIndices
   -> UI ()
 updateNodesUI window connectedNodes displayedElements acceptedMetrics
-              savedTO dpRequestors loggingConfig colors datasetIndices = do
+              savedTO nodesEraSettings dpRequestors loggingConfig colors datasetIndices = do
   (connected, displayedEls) <- liftIO . atomically $ (,)
     <$> readTVar connectedNodes
     <*> readTVar displayedElements
@@ -70,7 +74,7 @@ updateNodesUI window connectedNodes displayedElements acceptedMetrics
   setBlockReplayProgress window connected displayedElements acceptedMetrics
   setChunkValidationProgress window connected savedTO
   setLeadershipStats window connected displayedElements acceptedMetrics
-  setEraEpochKES window connected displayedElements savedTO
+  setEraEpochInfo window connected displayedElements acceptedMetrics nodesEraSettings
 
 addColumnsForConnected
   :: UI.Window
@@ -227,48 +231,51 @@ setLeadershipStats window connected displayed acceptedMetrics = do
           "slotsMissed"        -> setDisplayedValue window nodeId displayed (anId <> "__node-missed-slots") mValue
           _ -> return ()
 
-setEraEpochKES
+setEraEpochInfo
   :: UI.Window
   -> Set NodeId
   -> DisplayedElements
-  -> SavedTraceObjects
+  -> AcceptedMetrics
+  -> NodesEraSettings
   -> UI ()
-setEraEpochKES window connected displayed savedTO = do
-  savedTraceObjects <- liftIO $ readTVarIO savedTO
+setEraEpochInfo window connected displayed acceptedMetrics nodesEraSettings = do
+  allSettings <- liftIO $ readTVarIO nodesEraSettings
+  allMetrics <- liftIO $ readTVarIO acceptedMetrics
   forM_ connected $ \nodeId@(NodeId anId) ->
-    whenJust (M.lookup nodeId savedTraceObjects) $ \savedTOForNode ->
-      whenJust (M.lookup "Cardano.Node.Startup.ShelleyBased" savedTOForNode) $ \trObValue ->
-        -- Example: "Era Alonzo, Slot length 1s, Epoch length 432000, Slots per KESPeriod 129600"
-        case T.words $ T.replace "," "" trObValue of
-          -- Era Alonzo Slot length 1s Epoch length 432000 Slots per KESPeriod 129600"
-          [_, era, _, _, slotLen, _, _, epochLen, _, _, _, kesPeriod] -> do
-            setDisplayedValue window nodeId displayed (anId <> "__node-era") era
-            let slotInSec       = readInt (T.init slotLen) 0
-                epochInSlot     = readInt epochLen 0
-                kesPeriodInSlot = readInt kesPeriod 0
-            unless (slotInSec == 0) $ do
-              let epochInDays      = epochInSlot     `div` slotInSec `div` 3600 `div` 24
-                  kesPeriodInHours = kesPeriodInSlot `div` slotInSec `div` 3600
-              setDisplayedValue window nodeId displayed
-                                (anId <> "__node-epoch-length") $ showT epochInDays
-              setDisplayedValue window nodeId displayed
-                                (anId <> "__node-kes-period-length") $ showT kesPeriodInHours
-          _ -> return ()
-
--- Misc
-
-setDisplayedValue
-  :: UI.Window
-  -> NodeId
-  -> DisplayedElements
-  -> Text
-  -> Text
-  -> UI ()
-setDisplayedValue window nodeId displayedElements elId mValue =
-  liftIO (getDisplayedValue displayedElements nodeId elId) >>= \case
-    Nothing        -> setAndRemember
-    Just displayed -> unless (displayed == mValue) $ setAndRemember
+    whenJust (M.lookup nodeId allSettings) $ \settings -> do
+      setDisplayedValue window nodeId displayed (anId <> "__node-era") $ nesEra settings
+      whenJust (M.lookup nodeId allMetrics) $ \(ekgStore, _) -> do
+        metrics <- liftIO $ getListOfMetrics ekgStore
+        forM_ metrics $ \(mName, mValue) ->
+          case mName of
+            "cardano.node.epoch"       -> updateEpochInfo settings nodeId mValue
+            "cardano.node.slotInEpoch" -> updateEpochProgress settings anId mValue
+            _ -> return ()
  where
-  setAndRemember = do
-    findAndSetText mValue window elId
-    liftIO $ saveDisplayedValue displayedElements nodeId elId mValue
+  updateEpochProgress NodeEraSettings{nesEpochLength} anId mValue =
+    whenJust (readMaybe $ T.unpack mValue) $ \(slotInEpochNum :: Integer) -> do
+      let !(epochProgressPct :: Double) =
+            fromIntegral slotInEpochNum / fromIntegral nesEpochLength / 100.0
+      findAndSet (set value $ show epochProgressPct) window (anId <> "__node-epoch-progress")
+
+  updateEpochInfo nodeEraSettings nodeId@(NodeId anId) mValue = do
+    setDisplayedValue window nodeId displayed (anId <> "__node-epoch-num") mValue
+    whenJust (readMaybe $ T.unpack mValue) $ \(epochNum :: Int) ->
+      whenJust (getTimeRangeOfCurrentEpoch nodeEraSettings epochNum) $ \(start, end) -> do
+        let start' = T.replace " " "<br>" $ formatT start
+            end'   = T.replace " " "<br>" $ formatT end
+        findAndSetHTML start' window $ anId <> "__node-epoch-start"
+        findAndSetHTML end'   window $ anId <> "__node-epoch-end"
+
+  formatT = T.pack . formatTime defaultTimeLocale "%D %T"
+
+  getTimeRangeOfCurrentEpoch NodeEraSettings{nesEra, nesSlotLengthInS, nesEpochLength} currentEpoch =
+    case lookup nesEra epochsInfo of
+      Nothing -> Nothing
+      Just (epochStartDate, firstEpochInEra) -> do
+        let elapsedEpochsInEra = currentEpoch - firstEpochInEra
+            epochLengthInS = nesSlotLengthInS * nesEpochLength
+            secondsFromEpochStartToEpoch = epochLengthInS * elapsedEpochsInEra
+            !dateOfEpochStart = epochStartDate + fromIntegral secondsFromEpochStartToEpoch
+            !dateOfEpochEnd = dateOfEpochStart + fromIntegral epochLengthInS
+        Just (s2utc dateOfEpochStart, s2utc dateOfEpochEnd)

@@ -14,6 +14,7 @@ import qualified Graphics.UI.Threepenny as UI
 import           Graphics.UI.Threepenny.Core
 
 import           Cardano.Tracer.Configuration
+import           Cardano.Tracer.Handlers.RTView.State.Common
 import           Cardano.Tracer.Handlers.RTView.State.Displayed
 import           Cardano.Tracer.Handlers.RTView.State.TraceObjects
 import           Cardano.Tracer.Handlers.RTView.UI.Types
@@ -28,19 +29,21 @@ updateUI
   -> DisplayedElements
   -> AcceptedMetrics
   -> SavedTraceObjects
+  -> NodesEraSettings
   -> DataPointRequestors
   -> NonEmpty LoggingParams
   -> Colors
   -> DatasetsIndices
   -> UI ()
 updateUI window connectedNodes displayedElements acceptedMetrics savedTO
-         dpRequestors loggingConfig colors datasetIndices = do
+         nodesEraSettings dpRequestors loggingConfig colors datasetIndices = do
   updateNodesUI
     window
     connectedNodes
     displayedElements
     acceptedMetrics
     savedTO
+    nodesEraSettings
     dpRequestors
     loggingConfig
     colors

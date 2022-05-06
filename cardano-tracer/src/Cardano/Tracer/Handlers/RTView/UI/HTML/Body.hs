@@ -170,14 +170,9 @@ mkPageBody window networkConfig connected
                                          , string "Era"
                                          ]
                               ]
-                          , UI.tr ## "node-epoch-length-row" #+
+                          , UI.tr ## "node-epoch-row" #+
                               [ UI.td #+ [ image "rt-view-overview-icon" lengthSVG
-                                         , string "Epoch length"
-                                         ]
-                              ]
-                          , UI.tr ## "node-kes-period-length-row" #+
-                              [ UI.td #+ [ image "rt-view-overview-icon" lengthSVG
-                                         , string "KES period length"
+                                         , string "Epoch"
                                          ]
                               ]
                           , UI.tr ## "node-system-start-time-row" #+

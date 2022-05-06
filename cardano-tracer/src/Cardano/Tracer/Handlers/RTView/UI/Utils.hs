@@ -23,14 +23,18 @@ module Cardano.Tracer.Handlers.RTView.UI.Utils
   , pageTitleNotify
   , shortenName
   , shortenPath
+  , setDisplayedValue
   ) where
 
 import           Data.Text (Text, unpack)
 import qualified Data.Text as T
-import           Control.Monad (void)
+import           Control.Monad (unless, void)
 import           Control.Monad.Extra (whenJustM)
 import qualified Graphics.UI.Threepenny as UI
 import           Graphics.UI.Threepenny.Core
+
+import           Cardano.Tracer.Handlers.RTView.State.Displayed
+import           Cardano.Tracer.Types
 
 (##) :: UI Element -> String -> UI Element
 (##) el anId = el # set UI.id_ anId
@@ -143,3 +147,19 @@ shortenName n =
   if T.length n > 20
     then T.take 20 n <> "..."
     else n
+
+setDisplayedValue
+  :: UI.Window
+  -> NodeId
+  -> DisplayedElements
+  -> Text
+  -> Text
+  -> UI ()
+setDisplayedValue window nodeId displayedElements elId mValue =
+  liftIO (getDisplayedValue displayedElements nodeId elId) >>= \case
+    Nothing        -> setAndRemember
+    Just displayed -> unless (displayed == mValue) $ setAndRemember
+ where
+  setAndRemember = do
+    findAndSetText mValue window elId
+    liftIO $ saveDisplayedValue displayedElements nodeId elId mValue

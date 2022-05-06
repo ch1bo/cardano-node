@@ -14,6 +14,7 @@ import           Data.List.NonEmpty (NonEmpty)
 import           System.Time.Extra (sleep)
 
 import           Cardano.Tracer.Configuration
+import           Cardano.Tracer.Handlers.RTView.State.Common
 import           Cardano.Tracer.Handlers.RTView.State.Displayed
 import           Cardano.Tracer.Handlers.RTView.State.Historical
 import           Cardano.Tracer.Handlers.RTView.State.TraceObjects
@@ -33,6 +34,7 @@ mkMainPage
   -> DisplayedElements
   -> AcceptedMetrics
   -> SavedTraceObjects
+  -> NodesEraSettings
   -> DataPointRequestors
   -> PageReloadedFlag
   -> NonEmpty LoggingParams
@@ -43,7 +45,7 @@ mkMainPage
   -> UI.Window
   -> UI ()
 mkMainPage connectedNodes displayedElements acceptedMetrics savedTO
-           dpRequestors reloadFlag loggingConfig networkConfig
+           nodesEraSettings dpRequestors reloadFlag loggingConfig networkConfig
            resourcesHistory chainHistory txHistory window = do
   void $ return window # set UI.title pageTitle
   void $ UI.getHead window #+
@@ -107,6 +109,7 @@ mkMainPage connectedNodes displayedElements acceptedMetrics savedTO
       displayedElements
       acceptedMetrics
       savedTO
+      nodesEraSettings
       dpRequestors
       loggingConfig
       colors

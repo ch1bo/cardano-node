@@ -5,18 +5,21 @@ module Cardano.Tracer.Handlers.RTView.Run
   , module Cardano.Tracer.Handlers.RTView.State.TraceObjects
   ) where
 
-import           Control.Concurrent.Async (concurrently_)
+import           Control.Concurrent.Async.Extra (sequenceConcurrently)
+import           Control.Monad (void)
 import           Control.Monad.Extra (whenJust)
 import qualified Data.Text as T
 import           Data.Text.Encoding (encodeUtf8)
 import qualified Graphics.UI.Threepenny as UI
 
 import           Cardano.Tracer.Configuration
+import           Cardano.Tracer.Handlers.RTView.State.Common
 import           Cardano.Tracer.Handlers.RTView.State.Displayed
 import           Cardano.Tracer.Handlers.RTView.State.Historical
 import           Cardano.Tracer.Handlers.RTView.State.Last
 import           Cardano.Tracer.Handlers.RTView.State.TraceObjects
 import           Cardano.Tracer.Handlers.RTView.UI.HTML.Main
+import           Cardano.Tracer.Handlers.RTView.Update.Common
 import           Cardano.Tracer.Handlers.RTView.Update.Historical
 import           Cardano.Tracer.Types
 
@@ -52,27 +55,35 @@ runRTView TracerConfig{logging, network, hasRTView}
     lastResources <- initLastResources
     chainHistory <- initBlockchainHistory
     txHistory <- initTransactionsHistory
-    concurrently_
-      (UI.startGUI (config host port) $
-         mkMainPage
-           connectedNodes
-           displayedElements
-           acceptedMetrics
-           savedTO
-           dpRequestors
-           reloadFlag
-           logging
-           network
-           resourcesHistory
-           chainHistory
-           txHistory)
-      (runHistoricalUpdater
-         savedTO
-         acceptedMetrics
-         resourcesHistory
-         lastResources
-         chainHistory
-         txHistory)
+    eraSettings <- initNodesEraSettings
+
+    void . sequenceConcurrently $
+      [ UI.startGUI (config host port) $
+          mkMainPage
+            connectedNodes
+            displayedElements
+            acceptedMetrics
+            savedTO
+            eraSettings
+            dpRequestors
+            reloadFlag
+            logging
+            network
+            resourcesHistory
+            chainHistory
+            txHistory
+      , runHistoricalUpdater
+          savedTO
+          acceptedMetrics
+          resourcesHistory
+          lastResources
+          chainHistory
+          txHistory
+      , runCommonUpdater
+          connectedNodes
+          eraSettings
+          savedTO
+      ]
  where
   config h p = UI.defaultConfig
     { UI.jsPort = Just . fromIntegral $ p

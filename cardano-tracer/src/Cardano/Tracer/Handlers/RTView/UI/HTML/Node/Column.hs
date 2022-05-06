@@ -56,14 +56,23 @@ addNodeColumn window loggingConfig (NodeId anId) = do
   addNodeCell "era" [ UI.span ## (id' <> "__node-era")
                               # set text "—"
                     ]
-  addNodeCell "epoch-length" [ UI.span ## (id' <> "__node-epoch-length")
-                                       # set text "—"
-                             , UI.span # set html "&nbsp;days"
-                             ]
-  addNodeCell "kes-period-length" [ UI.span ## (id' <> "__node-kes-period-length")
-                                            # set text "—"
-                                  , UI.span # set html "&nbsp;hours"
-                                  ]
+  addNodeCell "epoch" [ string "#"
+                      , UI.span ## (id' <> "__node-epoch-num")
+                                # set text "—"
+                      , UI.p #. "mt-4" #+
+                          [ UI.mkElement "progress" ## (id' <> "__node-epoch-progress")
+                                                    #. "progress is-small rt-view-epoch-progress"
+                                                    # set value "0.00"
+                          ]
+                      , UI.div #. "columns mt-1" #+
+                          [ UI.div #. "column" #+
+                              [ UI.span ## (id' <> "__node-epoch-start") #. "is-size-6" # set text "—"
+                              ]
+                          , UI.div #. "column has-text-right" #+
+                              [ UI.span ## (id' <> "__node-epoch-end") #. "is-size-6" # set text "—"
+                              ]
+                          ]
+                      ]
   addNodeCell "system-start-time" [ UI.span ## (id' <> "__node-system-start-time")
                                             # set text "—"
                                   ]
