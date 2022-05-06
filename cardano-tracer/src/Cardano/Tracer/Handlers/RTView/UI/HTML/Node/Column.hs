@@ -93,6 +93,9 @@ addNodeColumn window loggingConfig (NodeId anId) = do
   addNodeCell "chunk-validation" [ UI.span ## (id' <> "__node-chunk-validation")
                                            # set text "—"
                                  ]
+  addNodeCell "update-ledger-db" [ UI.span ## (id' <> "__node-update-ledger-db")
+                                           # set html "0&nbsp;%"
+                                 ]
   addNodeCell "leadership" [ UI.span ## (id' <> "__node-leadership")
                                      # set text "—"
                            ]

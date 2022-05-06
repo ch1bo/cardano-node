@@ -205,6 +205,11 @@ mkPageBody window networkConfig connected
                                          , string "Chunk validation"
                                          ]
                               ]
+                          , UI.tr ## "node-update-ledger-db-row" #+
+                              [ UI.td #+ [ image "rt-view-overview-icon" dbSVG
+                                         , string "Ledger DB"
+                                         ]
+                              ]
                           , UI.tr ## "node-leadership-row" #+
                               [ UI.td #+ [ image "rt-view-overview-icon" leaderSVG
                                          , string "Leadership"

@@ -73,6 +73,7 @@ updateNodesUI window connectedNodes displayedElements acceptedMetrics
   setUptimeForNodes window connected displayedElements
   setBlockReplayProgress window connected displayedElements acceptedMetrics
   setChunkValidationProgress window connected savedTO
+  setLedgerDBProgress window connected savedTO
   setLeadershipStats window connected displayedElements acceptedMetrics
   setEraEpochInfo window connected displayedElements acceptedMetrics nodesEraSettings
 
@@ -206,6 +207,33 @@ setChunkValidationProgress window connected savedTO = do
           "Cardano.Node.ChainDB.ImmDbEvent.ValidatedLastLocation" -> do
             findAndSetHTML "100.0&nbsp;%" window nodeChunkValidationElId
             findAndSet (set UI.class_ "rt-view-percent-done") window nodeChunkValidationElId
+          _ -> return ()
+
+setLedgerDBProgress
+  :: UI.Window
+  -> Set NodeId
+  -> SavedTraceObjects
+  -> UI ()
+setLedgerDBProgress window connected savedTO = do
+  savedTraceObjects <- liftIO $ readTVarIO savedTO
+  forM_ connected $ \nodeId@(NodeId anId) ->
+    whenJust (M.lookup nodeId savedTraceObjects) $ \savedTOForNode -> do
+      let nodeLedgerDBUpdateElId = anId <> "__node-update-ledger-db"
+      forM_ (M.toList savedTOForNode) $ \(namespace, trObValue) ->
+        case namespace of
+          "Cardano.Node.ChainDB.InitChainSelEvent.UpdateLedgerDb" ->
+            -- In this case we don't need to check if the value differs from displayed one,
+            -- because this 'TraceObject' is forwarded only with new values, and after 100%
+            -- the node doesn't forward it anymore.
+            --
+            -- Example: "Pushing ledger state for block b1e6...fc5a at slot 54495204. Progress: 3.66%"
+            case T.words trObValue of
+              [_, _, _, _, _, _, _, _, _, _, progressPct] -> do
+                findAndSetHTML (T.init progressPct <> "&nbsp;%") window nodeLedgerDBUpdateElId
+                when ("100" `T.isInfixOf` progressPct) $ do
+                  findAndSetHTML "100.0&nbsp;%" window nodeLedgerDBUpdateElId
+                  findAndSet (set UI.class_ "rt-view-percent-done") window nodeLedgerDBUpdateElId
+              _ -> return ()
           _ -> return ()
 
 setLeadershipStats
