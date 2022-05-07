@@ -70,12 +70,12 @@ updateNodesUI window connectedNodes displayedElements acceptedMetrics
     askNSetNodeInfo window dpRequestors newlyConnected displayedElements
     addDatasetsForConnected window newlyConnected colors datasetIndices displayedElements
     liftIO $ updateDisplayedElements displayedElements connected
-  setUptimeForNodes window connected displayedElements
-  setBlockReplayProgress window connected displayedElements acceptedMetrics
-  setChunkValidationProgress window connected savedTO
-  setLedgerDBProgress window connected savedTO
-  setLeadershipStats window connected displayedElements acceptedMetrics
-  setEraEpochInfo window connected displayedElements acceptedMetrics nodesEraSettings
+  setUptimeForNodes connected displayedElements
+  setBlockReplayProgress connected displayedElements acceptedMetrics
+  setChunkValidationProgress connected savedTO
+  setLedgerDBProgress connected savedTO
+  setLeadershipStats connected displayedElements acceptedMetrics
+  setEraEpochInfo connected displayedElements acceptedMetrics nodesEraSettings
 
 addColumnsForConnected
   :: UI.Window
@@ -125,11 +125,10 @@ checkNoNodesState window connected =
       findAndHide window "no-nodes-info"
 
 setUptimeForNodes
-  :: UI.Window
-  -> Set NodeId
+  :: Set NodeId
   -> DisplayedElements
   -> UI ()
-setUptimeForNodes window connected displayedElements = do
+setUptimeForNodes connected displayedElements = do
   now <- systemToUTCTime <$> liftIO getSystemTime
   forM_ connected $ \nodeId@(NodeId anId) -> do
     let nodeStartElId  = anId <> "__node-start-time"
@@ -144,17 +143,16 @@ setUptimeForNodes window connected displayedElements = do
                                -- Show days only if 'uptime' > 23:59:59.
                                then show daysNum <> "d " <> uptimeFormatted
                                else uptimeFormatted
-        findAndSetText (T.pack uptimeWithDays) window nodeUptimeElId
+        setTextValue nodeUptimeElId $ T.pack uptimeWithDays
  where
   nullTime = UTCTime (ModifiedJulianDay 0) 0
 
 setBlockReplayProgress
-  :: UI.Window
-  -> Set NodeId
+  :: Set NodeId
   -> DisplayedElements
   -> AcceptedMetrics
   -> UI ()
-setBlockReplayProgress window connected _displayedElements acceptedMetrics = do
+setBlockReplayProgress connected _displayedElements acceptedMetrics = do
   allMetrics <- liftIO $ readTVarIO acceptedMetrics
   forM_ connected $ \nodeId ->
     whenJust (M.lookup nodeId allMetrics) $ \(ekgStore, _) -> do
@@ -167,16 +165,14 @@ setBlockReplayProgress window connected _displayedElements acceptedMetrics = do
       let nodeBlockReplayElId = anId <> "__node-block-replay"
           progressPctS = T.pack $ show progressPct
       if ("100" `T.isInfixOf` progressPctS)
-        then findAndSet (set html "100&nbsp;%" . set UI.class_ "rt-view-percent-done")
-                        window nodeBlockReplayElId
-        else findAndSetHTML (progressPctS <> "&nbsp;%") window nodeBlockReplayElId
+        then setTextAndClasses nodeBlockReplayElId "100&nbsp;%" "rt-view-percent-done"
+        else setTextValue nodeBlockReplayElId $ progressPctS <> "&nbsp;%"
 
 setChunkValidationProgress
-  :: UI.Window
-  -> Set NodeId
+  :: Set NodeId
   -> SavedTraceObjects
   -> UI ()
-setChunkValidationProgress window connected savedTO = do
+setChunkValidationProgress connected savedTO = do
   savedTraceObjects <- liftIO $ readTVarIO savedTO
   forM_ connected $ \nodeId@(NodeId anId) ->
     whenJust (M.lookup nodeId savedTraceObjects) $ \savedTOForNode -> do
@@ -191,20 +187,18 @@ setChunkValidationProgress window connected savedTO = do
             -- Example: "Validated chunk no. 2262 out of 2423. Progress: 93.36%"
             case T.words trObValue of
               [_, _, _, current, _, _, from, _, progressPct] ->
-                findAndSetHTML (T.init progressPct <> "&nbsp;%: no. " <> current <> " from " <> T.init from)
-                               window nodeChunkValidationElId
+                setTextValue nodeChunkValidationElId $
+                             T.init progressPct <> "&nbsp;%: no. " <> current <> " from " <> T.init from
               _ -> return ()
           "Cardano.Node.ChainDB.ImmDbEvent.ValidatedLastLocation" ->
-            findAndSet (set html "100&nbsp;%" . set UI.class_ "rt-view-percent-done")
-                       window nodeChunkValidationElId
+            setTextAndClasses nodeChunkValidationElId "100&nbsp;%" "rt-view-percent-done"
           _ -> return ()
 
 setLedgerDBProgress
-  :: UI.Window
-  -> Set NodeId
+  :: Set NodeId
   -> SavedTraceObjects
   -> UI ()
-setLedgerDBProgress window connected savedTO = do
+setLedgerDBProgress connected savedTO = do
   savedTraceObjects <- liftIO $ readTVarIO savedTO
   forM_ connected $ \nodeId@(NodeId anId) ->
     whenJust (M.lookup nodeId savedTraceObjects) $ \savedTOForNode -> do
@@ -220,19 +214,17 @@ setLedgerDBProgress window connected savedTO = do
             case T.words trObValue of
               [_, _, _, _, _, _, _, _, _, _, progressPct] -> do
                 if ("100" `T.isInfixOf` progressPct)
-                  then findAndSet (set html "100&nbsp;%" . set UI.class_ "rt-view-percent-done")
-                                  window nodeLedgerDBUpdateElId
-                  else findAndSetHTML (T.init progressPct <> "&nbsp;%") window nodeLedgerDBUpdateElId
+                  then setTextAndClasses nodeLedgerDBUpdateElId "100&nbsp;%" "rt-view-percent-done"
+                  else setTextValue nodeLedgerDBUpdateElId $ T.init progressPct <> "&nbsp;%"
               _ -> return ()
           _ -> return ()
 
 setLeadershipStats
-  :: UI.Window
-  -> Set NodeId
+  :: Set NodeId
   -> DisplayedElements
   -> AcceptedMetrics
   -> UI ()
-setLeadershipStats window connected displayed acceptedMetrics = do
+setLeadershipStats connected displayed acceptedMetrics = do
   allMetrics <- liftIO $ readTVarIO acceptedMetrics
   forM_ connected $ \nodeId@(NodeId anId) ->
     whenJust (M.lookup nodeId allMetrics) $ \(ekgStore, _) -> do
@@ -240,38 +232,37 @@ setLeadershipStats window connected displayed acceptedMetrics = do
       forM_ metrics $ \(mName, mValue) ->
         case mName of
           -- How many times this node was a leader?
-          "nodeIsLeaderNum"    -> setDisplayedValue window nodeId displayed (anId <> "__node-leadership") mValue
+          "nodeIsLeaderNum"    -> setDisplayedValue nodeId displayed (anId <> "__node-leadership") mValue
           -- How many blocks were forged by this node.
-          "blocksForgedNum"    -> setDisplayedValue window nodeId displayed (anId <> "__node-forged-blocks") mValue
+          "blocksForgedNum"    -> setDisplayedValue nodeId displayed (anId <> "__node-forged-blocks") mValue
           -- How many times this node could not forge.
-          "nodeCannotForgeNum" -> setDisplayedValue window nodeId displayed (anId <> "__node-cannot-forge") mValue
+          "nodeCannotForgeNum" -> setDisplayedValue nodeId displayed (anId <> "__node-cannot-forge") mValue
           -- How many slots were missed in this node.
-          "slotsMissed"        -> setDisplayedValue window nodeId displayed (anId <> "__node-missed-slots") mValue
+          "slotsMissed"        -> setDisplayedValue nodeId displayed (anId <> "__node-missed-slots") mValue
           _ -> return ()
 
 setEraEpochInfo
-  :: UI.Window
-  -> Set NodeId
+  :: Set NodeId
   -> DisplayedElements
   -> AcceptedMetrics
   -> NodesEraSettings
   -> UI ()
-setEraEpochInfo window connected displayed acceptedMetrics nodesEraSettings = do
+setEraEpochInfo connected displayed acceptedMetrics nodesEraSettings = do
   allSettings <- liftIO $ readTVarIO nodesEraSettings
   allMetrics <- liftIO $ readTVarIO acceptedMetrics
   forM_ connected $ \nodeId@(NodeId anId) ->
     whenJust (M.lookup nodeId allSettings) $ \settings -> do
-      setDisplayedValue window nodeId displayed (anId <> "__node-era") $ nesEra settings
+      setDisplayedValue nodeId displayed (anId <> "__node-era") $ nesEra settings
       whenJust (M.lookup nodeId allMetrics) $ \(ekgStore, _) -> do
         metrics <- liftIO $ getListOfMetrics ekgStore
         whenJust (lookup "cardano.node.epoch" metrics) $ \mValue ->
           updateEpochInfo settings nodeId mValue
  where
   updateEpochInfo nodeEraSettings nodeId@(NodeId anId) mValue = do
-    setDisplayedValue window nodeId displayed (anId <> "__node-epoch-num") mValue
+    setDisplayedValue nodeId displayed (anId <> "__node-epoch-num") mValue
     whenJust (readMaybe $ T.unpack mValue) $ \(epochNum :: Int) ->
       whenJust (getEndOfCurrentEpoch nodeEraSettings epochNum) $ \end ->
-        findAndSetHTML (formatT end) window $ anId <> "__node-epoch-end"
+        setTextValue (anId <> "__node-epoch-end") $ formatT end
 
   formatT = T.pack . formatTime defaultTimeLocale "%D %T"
 

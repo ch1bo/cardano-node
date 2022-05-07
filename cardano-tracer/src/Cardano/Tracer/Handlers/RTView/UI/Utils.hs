@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module Cardano.Tracer.Handlers.RTView.UI.Utils
   ( (##)
@@ -9,6 +10,10 @@ module Cardano.Tracer.Handlers.RTView.UI.Utils
   , findAndSet
   , findAndSetHTML
   , findAndSetText
+  , justCleanText
+  , setTextValue
+  , setTextValues
+  , setTextAndClasses
   , findByClassAndSet
   , findAndAdd
   , findAndHide
@@ -26,10 +31,11 @@ module Cardano.Tracer.Handlers.RTView.UI.Utils
   , setDisplayedValue
   ) where
 
-import           Data.Text (Text, unpack)
-import qualified Data.Text as T
 import           Control.Monad (unless, void)
 import           Control.Monad.Extra (whenJustM)
+import           Data.String.QQ
+import           Data.Text (Text, unpack)
+import qualified Data.Text as T
 import qualified Graphics.UI.Threepenny as UI
 import           Graphics.UI.Threepenny.Core
 
@@ -76,6 +82,33 @@ findAndSetText
   -> Text
   -> UI ()
 findAndSetText t = findAndSet (set text $ unpack t)
+
+justCleanText :: Text -> UI ()
+justCleanText elId =
+  UI.runFunction $ UI.ffi "document.getElementById(%1).innerHTML = '';" elId
+
+setTextValue :: Text -> Text -> UI ()
+setTextValue elId textToSet =
+  UI.runFunction $ UI.ffi "document.getElementById(%1).innerHTML = %2;" elId textToSet
+
+setTextValues :: [(Text, Text)] -> UI ()
+setTextValues [] = return ()
+setTextValues idsWithValues = UI.runFunction $ UI.ffi setAllValues
+ where
+  setAllValues = T.unpack . T.concat $ map setValue idsWithValues
+  setValue (elId, textToSet) =
+    "document.getElementById(\"" <> elId <> "\").innerHTML = \"" <> textToSet <> "\";"
+
+setTextAndClasses :: Text -> Text -> Text -> UI ()
+setTextAndClasses elId textToSet classesToSet =
+  UI.runFunction $ UI.ffi setTextAndClasses' elId textToSet classesToSet
+
+setTextAndClasses' :: String
+setTextAndClasses' = [s|
+var el = document.getElementById(%1);
+el.innerHTML = %2;
+el.className = %3;
+|]
 
 findAndAdd
   :: [UI Element]
@@ -149,17 +182,16 @@ shortenName n =
     else n
 
 setDisplayedValue
-  :: UI.Window
-  -> NodeId
+  :: NodeId
   -> DisplayedElements
   -> Text
   -> Text
   -> UI ()
-setDisplayedValue window nodeId displayedElements elId mValue =
+setDisplayedValue nodeId displayedElements elId mValue =
   liftIO (getDisplayedValue displayedElements nodeId elId) >>= \case
     Nothing        -> setAndRemember
     Just displayed -> unless (displayed == mValue) $ setAndRemember
  where
   setAndRemember = do
-    findAndSetText mValue window elId
+    setTextValue elId mValue
     liftIO $ saveDisplayedValue displayedElements nodeId elId mValue

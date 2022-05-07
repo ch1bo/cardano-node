@@ -31,26 +31,28 @@ askNSetNodeInfo window dpRequestors newlyConnected displayedElements =
     forM_ newlyConnected $ \nodeId@(NodeId anId) ->
       whenJustM (liftIO $ askDataPoint dpRequestors nodeId "NodeInfo") $ \ni -> do
         let nodeNameElId = anId <> "__node-name"
-        findAndSetText (shortenName $ niName ni) window nodeNameElId
-        liftIO $ saveDisplayedValue displayedElements nodeId nodeNameElId (niName ni)
-
-        findAndSetText (niVersion ni) window (anId <> "__node-version")
-
-        setProtocol (niProtocol ni) (anId <> "__node-protocol")
-
-        findAndSetText (T.take 7 $ niCommit ni) window (anId <> "__node-commit")
+        
+        setTextValues
+          [ (nodeNameElId,             shortenName $ niName ni)
+          , (anId <> "__node-version", niVersion ni)
+          , (anId <> "__node-commit",  T.take 7 $ niCommit ni)
+          ]
 
         findAndSet (set UI.href $ nodeLink (niCommit ni)) window (anId <> "__node-commit")
+
+        setProtocol (niProtocol ni) (anId <> "__node-protocol")
 
         let nodeStartElId = anId <> "__node-start-time"
         setTime (niStartTime ni) nodeStartElId
         setTime (niSystemStartTime ni) (anId <> "__node-system-start-time")
+
         liftIO $ saveDisplayedValue displayedElements nodeId nodeStartElId (T.pack . show $ niStartTime ni)
+        liftIO $ saveDisplayedValue displayedElements nodeId nodeNameElId (niName ni)
  where
   nodeLink commit = T.unpack $ "https://github.com/input-output-hk/cardano-node/commit/" <> T.take 7 commit
 
   setProtocol p id' = do
-    findAndSetText "" window id'
+    justCleanText id'
     let byronTag   = UI.span #. "tag is-warning is-rounded is-medium" # set text "Byron"
         shelleyTag = UI.span #. "tag is-info is-rounded is-medium ml-3" # set text "Shelley"
     case p of
@@ -59,7 +61,7 @@ askNSetNodeInfo window dpRequestors newlyConnected displayedElements =
       _         -> findAndAdd [byronTag, shelleyTag] window id'
 
   setTime ts id' = do
-    findAndSetText "" window id'
+    justCleanText id'
     let time = formatTime defaultTimeLocale "%b %e, %Y %T" ts
         tz   = formatTime defaultTimeLocale "%Z" ts
     findAndAdd [ string time
