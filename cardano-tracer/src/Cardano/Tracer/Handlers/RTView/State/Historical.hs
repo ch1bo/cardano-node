@@ -14,6 +14,8 @@ module Cardano.Tracer.Handlers.RTView.State.Historical
   , initBlockchainHistory
   , initResourcesHistory
   , initTransactionsHistory
+  , readValueI
+  , readValueD
   ) where
 
 import           Control.Concurrent.STM (atomically)
@@ -22,6 +24,8 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Set (Set)
 import qualified Data.Set as S
+import           Data.Text (Text)
+import           Data.Text.Read
 import           Data.Time.Clock (UTCTime)
 import           Data.Word (Word64)
 
@@ -176,3 +180,23 @@ getHistoricalData history nodeId dataName = do
       case M.lookup dataName dataForNode of
         Nothing -> return []
         Just points -> return $ S.toAscList points
+
+readValueI
+  :: Monad m
+  => Text
+  -> (ValueH -> m ())
+  -> m ()
+readValueI t f =
+  case decimal t of
+    Left _ -> return ()
+    Right (i, _) -> f (ValueI i)
+
+readValueD
+  :: Monad m
+  => Text
+  -> (ValueH -> m ())
+  -> m ()
+readValueD t f =
+  case double t of
+    Left _ -> return ()
+    Right (d, _) -> f (ValueD d)

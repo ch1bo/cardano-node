@@ -14,12 +14,14 @@ module Cardano.Tracer.Handlers.RTView.Update.Nodes
 import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TVar
 import           Control.Monad (forM_, unless, when)
-import           Control.Monad.Extra (whenJust, whenJustM)
+import           Control.Monad.Extra (whenJust)
 import           Data.List.NonEmpty (NonEmpty)
 import qualified Data.Map.Strict as M
+import           Data.Maybe (catMaybes)
 import           Data.Set (Set, (\\))
 import qualified Data.Set as S
 import qualified Data.Text as T
+--import           Data.Text.Read
 import           Data.Time.Calendar
 import           Data.Time.Clock (UTCTime (..), addUTCTime, diffUTCTime)
 import           Data.Time.Clock.System
@@ -130,21 +132,29 @@ setUptimeForNodes
   -> UI ()
 setUptimeForNodes connected displayedElements = do
   now <- systemToUTCTime <$> liftIO getSystemTime
-  forM_ connected $ \nodeId@(NodeId anId) -> do
+  displayed <- liftIO $ readTVarIO displayedElements
+  let elsIdsWithUptimes = map (getUptimeForNode now displayed) $ S.toList connected
+  setTextValues $ catMaybes elsIdsWithUptimes
+ where
+  getUptimeForNode now displayed nodeId@(NodeId anId) =
     let nodeStartElId  = anId <> "__node-start-time"
         nodeUptimeElId = anId <> "__node-uptime"
-    whenJustM (liftIO $ getDisplayedValue displayedElements nodeId nodeStartElId) $ \tsRaw ->
-      whenJust (readMaybe (T.unpack tsRaw) :: Maybe UTCTime) $ \startTime -> do
-        let uptimeDiff = now `diffUTCTime` startTime
-            uptime = uptimeDiff `addUTCTime` nullTime
-            uptimeFormatted = formatTime defaultTimeLocale "%X" uptime
-            daysNum = utctDay uptime `diffDays` utctDay nullTime
-            uptimeWithDays = if daysNum > 0
-                               -- Show days only if 'uptime' > 23:59:59.
-                               then show daysNum <> "d " <> uptimeFormatted
-                               else uptimeFormatted
-        setTextValue nodeUptimeElId $ T.pack uptimeWithDays
- where
+    in case getDisplayedValuePure displayed nodeId nodeStartElId of
+         Nothing -> Nothing
+         Just tsRaw ->
+           case readMaybe (T.unpack tsRaw) of
+             Nothing -> Nothing
+             Just (startTime :: UTCTime) ->
+               let uptimeDiff = now `diffUTCTime` startTime
+                   uptime = uptimeDiff `addUTCTime` nullTime
+                   uptimeFormatted = formatTime defaultTimeLocale "%X" uptime
+                   daysNum = utctDay uptime `diffDays` utctDay nullTime
+                   uptimeWithDays = if daysNum > 0
+                                      -- Show days only if 'uptime' > 23:59:59.
+                                      then show daysNum <> "d " <> uptimeFormatted
+                                      else uptimeFormatted
+               in Just (nodeUptimeElId, T.pack uptimeWithDays)
+
   nullTime = UTCTime (ModifiedJulianDay 0) 0
 
 setBlockReplayProgress
@@ -231,7 +241,7 @@ setLeadershipStats connected displayed acceptedMetrics = do
       metrics <- liftIO $ getListOfMetrics ekgStore
       forM_ metrics $ \(mName, mValue) ->
         case mName of
-          -- How many times this node was a leader?
+          -- How many times this node was a leader.
           "nodeIsLeaderNum"    -> setDisplayedValue nodeId displayed (anId <> "__node-leadership") mValue
           -- How many blocks were forged by this node.
           "blocksForgedNum"    -> setDisplayedValue nodeId displayed (anId <> "__node-forged-blocks") mValue

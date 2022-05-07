@@ -2,6 +2,7 @@ module Cardano.Tracer.Handlers.RTView.State.Displayed
   ( DisplayedElements
   , PageReloadedFlag
   , getDisplayedValue
+  , getDisplayedValuePure
   , initDisplayedElements
   , initPageReloadFlag
   , pageWasReload
@@ -46,6 +47,14 @@ getDisplayedValue
   -> IO (Maybe ElementValue)
 getDisplayedValue displayedElements nodeId elId =
   maybe Nothing (M.lookup elId) . M.lookup nodeId <$> readTVarIO displayedElements
+
+getDisplayedValuePure
+  :: Map NodeId DisplayedForNode
+  -> NodeId
+  -> ElementId
+  -> Maybe ElementValue
+getDisplayedValuePure displayed nodeId elId =
+  maybe Nothing (M.lookup elId) . M.lookup nodeId $ displayed
 
 saveDisplayedValue
   :: DisplayedElements

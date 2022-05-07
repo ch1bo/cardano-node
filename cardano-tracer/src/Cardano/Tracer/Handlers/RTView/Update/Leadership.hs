@@ -6,10 +6,7 @@ module Cardano.Tracer.Handlers.RTView.Update.Leadership
   ( updateLeadershipHistory
   ) where
 
-import           Control.Monad.Extra (whenJust)
 import           Data.Time.Clock
-import           Data.Text (unpack)
-import           Text.Read (readMaybe)
 
 import           Cardano.Tracer.Handlers.Metrics.Utils
 import           Cardano.Tracer.Handlers.RTView.State.Historical
@@ -44,40 +41,29 @@ updateLeadershipHistory nodeId (ChainHistory cHistory) metricName metricValue no
     "cardano.node.couldNotForgeSlotLast" -> updateCouldNotForgeSlotLast
     _ -> return ()
  where
-  valueS = unpack metricValue
-
   updateNodeCannotForge =
-    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
-      addHistoricalData cHistory nodeId now NodeCannotForgeData $ ValueI slotNum
+    readValueI metricValue $ addHistoricalData cHistory nodeId now NodeCannotForgeData
 
   updateForgedSlotLast =
-    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
-      addHistoricalData cHistory nodeId now ForgedSlotLastData $ ValueI slotNum
+    readValueI metricValue $ addHistoricalData cHistory nodeId now ForgedSlotLastData
 
   updateNodeIsLeader =
-    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
-      addHistoricalData cHistory nodeId now NodeIsLeaderData $ ValueI slotNum
+    readValueI metricValue $ addHistoricalData cHistory nodeId now NodeIsLeaderData
 
   updateNodeIsNotLeader =
-    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
-      addHistoricalData cHistory nodeId now NodeIsNotLeaderData $ ValueI slotNum
+    readValueI metricValue $ addHistoricalData cHistory nodeId now NodeIsNotLeaderData
 
   updateForgedInvalidSlotLast =
-    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
-      addHistoricalData cHistory nodeId now ForgedInvalidSlotLastData $ ValueI slotNum
+    readValueI metricValue $ addHistoricalData cHistory nodeId now ForgedInvalidSlotLastData
 
   updateAdoptedSlotLast =
-    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
-      addHistoricalData cHistory nodeId now AdoptedSlotLastData $ ValueI slotNum
+    readValueI metricValue $ addHistoricalData cHistory nodeId now AdoptedSlotLastData
 
   updateNotAdoptedSlotLast =
-    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
-      addHistoricalData cHistory nodeId now NotAdoptedSlotLastData $ ValueI slotNum
+    readValueI metricValue $ addHistoricalData cHistory nodeId now NotAdoptedSlotLastData
 
   updateAboutToLeadSlotLast =
-    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
-      addHistoricalData cHistory nodeId now AboutToLeadSlotLastData $ ValueI slotNum
+    readValueI metricValue $ addHistoricalData cHistory nodeId now AboutToLeadSlotLastData
 
   updateCouldNotForgeSlotLast =
-    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
-      addHistoricalData cHistory nodeId now CouldNotForgeSlotLastData $ ValueI slotNum
+    readValueI metricValue $ addHistoricalData cHistory nodeId now CouldNotForgeSlotLastData

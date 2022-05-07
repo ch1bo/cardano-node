@@ -6,10 +6,8 @@ module Cardano.Tracer.Handlers.RTView.Update.Transactions
   ( updateTransactionsHistory
   ) where
 
-import           Control.Monad.Extra (whenJust)
 import           Data.Time.Clock
-import           Data.Text (unpack)
-import           Text.Read (readMaybe)
+import           Data.Text.Read
 
 import           Cardano.Tracer.Handlers.Metrics.Utils
 import           Cardano.Tracer.Handlers.RTView.State.Historical
@@ -29,17 +27,15 @@ updateTransactionsHistory nodeId (TXHistory tHistory) metricName metricValue now
     "cardano.node.txsInMempool"    -> updateTxsInMempool
     _ -> return ()
  where
-  valueS = unpack metricValue
-
   updateTxsProcessedNum =
-    whenJust (readMaybe valueS) $ \(txsNum :: Int) ->
-      addHistoricalData tHistory nodeId now TxsProcessedNumData $ ValueI txsNum
-
-  updateMempoolBytes =
-    whenJust (readMaybe valueS) $ \(mempoolBytes :: Int) -> do
-      let !mempoolInMB = fromIntegral mempoolBytes / 1024 / 1024 :: Double
-      addHistoricalData tHistory nodeId now MempoolBytesData $ ValueD mempoolInMB
+    readValueI metricValue $ addHistoricalData tHistory nodeId now TxsProcessedNumData
 
   updateTxsInMempool =
-    whenJust (readMaybe valueS) $ \(txsInMempool :: Int) ->
-      addHistoricalData tHistory nodeId now TxsInMempoolData $ ValueI txsInMempool
+    readValueI metricValue $ addHistoricalData tHistory nodeId now TxsInMempoolData
+
+  updateMempoolBytes =
+    case decimal metricValue of
+      Left _ -> return ()
+      Right (mempoolBytes :: Int, _) -> do
+        let !mempoolInMB = fromIntegral mempoolBytes / 1024 / 1024 :: Double
+        addHistoricalData tHistory nodeId now MempoolBytesData $ ValueD mempoolInMB

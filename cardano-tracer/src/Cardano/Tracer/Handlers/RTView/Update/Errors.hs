@@ -25,25 +25,3 @@ updateErrors _window acceptedMetrics = do
     metrics <- liftIO $ getListOfMetrics ekgStore
     forM_ metrics $ \(_metricName, _metricValue) ->
       return ()
-{-
-      updateMetricsElements window nodeId metricName metricValue
-
-updateMetricsElements
-  :: UI.Window
-  -> NodeId
-  -> MetricName
-  -> MetricValue
-  -> UI ()
-updateMetricsElements window nodeId metricName metricValue =
-  case metricName of
-    "Stat.Cputicks" -> return ()
-    "Mem.Resident" -> return ()
-    "RTS.GcLiveBytes" -> return ()
-    "RTS.GcMajorNum" -> return ()
-    "RTS.GcMinorNum" -> return ()
-    "RTS.Gcticks" -> return ()
-    "RTS.Mutticks" -> return ()
-    "Stat.Threads" -> return ()
-    _ -> return ()
--}
-
