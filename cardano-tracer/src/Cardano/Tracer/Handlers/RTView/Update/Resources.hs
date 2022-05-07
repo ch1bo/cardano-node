@@ -44,7 +44,7 @@ updateResourcesHistory nodeId (ResHistory rHistory) lastResources metricName met
   valueS = unpack metricValue
 
   updateCPUUsage =
-    whenJust (readMaybe valueS) $ \(cpuTicks :: Integer) -> do
+    whenJust (readMaybe valueS) $ \(cpuTicks :: Int) -> do
       lastOnes <- readTVarIO lastResources
       case M.lookup nodeId lastOnes of
         Nothing ->
@@ -54,7 +54,7 @@ updateResourcesHistory nodeId (ResHistory rHistory) lastResources metricName met
           let tns        = utc2ns now
               tDiffInSec = max 0.1 $ fromIntegral (tns - cpuLastNS resourcesForNode) / 1000_000_000 :: Double
               ticksDiff  = cpuTicks - cpuLastTicks resourcesForNode
-              !cpuV      = fromIntegral ticksDiff / fromIntegral (100 :: Integer) / tDiffInSec
+              !cpuV      = fromIntegral ticksDiff / fromIntegral (100 :: Int) / tDiffInSec
               newCPUPct  = if cpuV < 0 then 0.0 else cpuV * 100.0
           addHistoricalData rHistory nodeId now CPUData $ ValueD newCPUPct
           updateLastResources lastResources nodeId $ \current ->
@@ -73,11 +73,11 @@ updateResourcesHistory nodeId (ResHistory rHistory) lastResources metricName met
       addHistoricalData rHistory nodeId now GCLiveMemoryData $ ValueD memoryInMB
 
   updateGCMajorNum =
-    whenJust (readMaybe valueS) $ \(gcMajorNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(gcMajorNum :: Int) ->
       addHistoricalData rHistory nodeId now GCMajorNumData $ ValueI gcMajorNum
 
   updateGCMinorNum =
-    whenJust (readMaybe valueS) $ \(gcMinorNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(gcMinorNum :: Int) ->
       addHistoricalData rHistory nodeId now GCMinorNumData $ ValueI gcMinorNum
 
   updateCPUTimeGC =
@@ -93,5 +93,5 @@ updateResourcesHistory nodeId (ResHistory rHistory) lastResources metricName met
       addHistoricalData rHistory nodeId now CPUTimeAppData $ ValueI (fromIntegral cpuTimeAppInMs)
 
   updateThreadsNum =
-    whenJust (readMaybe valueS) $ \(threadsNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(threadsNum :: Int) ->
       addHistoricalData rHistory nodeId now ThreadsNumData $ ValueI threadsNum

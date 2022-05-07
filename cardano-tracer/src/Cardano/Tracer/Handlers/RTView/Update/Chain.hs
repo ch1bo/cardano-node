@@ -39,17 +39,17 @@ updateBlockchainHistory nodeId (ChainHistory cHistory) metricName metricValue no
       addHistoricalData cHistory nodeId now ChainDensityData $ ValueD density'
 
   updateSlotNum =
-    whenJust (readMaybe valueS) $ \(slotNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
       addHistoricalData cHistory nodeId now SlotNumData $ ValueI slotNum
 
   updateBlockNum =
-    whenJust (readMaybe valueS) $ \(blockNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(blockNum :: Int) ->
       addHistoricalData cHistory nodeId now BlockNumData $ ValueI blockNum
 
   updateSlotInEpoch =
-    whenJust (readMaybe valueS) $ \(slotInEpoch :: Integer) ->
+    whenJust (readMaybe valueS) $ \(slotInEpoch :: Int) ->
       addHistoricalData cHistory nodeId now SlotInEpochData $ ValueI slotInEpoch
 
   updateEpoch =
-    whenJust (readMaybe valueS) $ \(epoch :: Integer) ->
+    whenJust (readMaybe valueS) $ \(epoch :: Int) ->
       addHistoricalData cHistory nodeId now EpochData $ ValueI epoch

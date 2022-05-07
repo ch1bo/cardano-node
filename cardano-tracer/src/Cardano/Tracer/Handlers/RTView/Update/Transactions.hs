@@ -32,14 +32,14 @@ updateTransactionsHistory nodeId (TXHistory tHistory) metricName metricValue now
   valueS = unpack metricValue
 
   updateTxsProcessedNum =
-    whenJust (readMaybe valueS) $ \(txsNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(txsNum :: Int) ->
       addHistoricalData tHistory nodeId now TxsProcessedNumData $ ValueI txsNum
 
   updateMempoolBytes =
-    whenJust (readMaybe valueS) $ \(mempoolBytes :: Integer) -> do
+    whenJust (readMaybe valueS) $ \(mempoolBytes :: Int) -> do
       let !mempoolInMB = fromIntegral mempoolBytes / 1024 / 1024 :: Double
       addHistoricalData tHistory nodeId now MempoolBytesData $ ValueD mempoolInMB
 
   updateTxsInMempool =
-    whenJust (readMaybe valueS) $ \(txsInMempool :: Integer) ->
+    whenJust (readMaybe valueS) $ \(txsInMempool :: Int) ->
       addHistoricalData tHistory nodeId now TxsInMempoolData $ ValueI txsInMempool

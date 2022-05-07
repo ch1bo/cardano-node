@@ -21,7 +21,7 @@ import           Cardano.Tracer.Types (NodeId)
 --   rendering on the corresponding chart.
 
 data LastResourcesForNode = LastResourcesForNode
-  { cpuLastTicks :: !Integer
+  { cpuLastTicks :: !Int
   , cpuLastNS    :: !Word64
   }
 

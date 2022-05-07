@@ -36,7 +36,7 @@ type POSIXTime = Word64
 
 data ValueH
   = ValueD Double
-  | ValueI Integer
+  | ValueI Int
   deriving (Eq, Ord)
 
 instance Show ValueH where

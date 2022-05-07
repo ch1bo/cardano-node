@@ -47,37 +47,37 @@ updateLeadershipHistory nodeId (ChainHistory cHistory) metricName metricValue no
   valueS = unpack metricValue
 
   updateNodeCannotForge =
-    whenJust (readMaybe valueS) $ \(slotNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
       addHistoricalData cHistory nodeId now NodeCannotForgeData $ ValueI slotNum
 
   updateForgedSlotLast =
-    whenJust (readMaybe valueS) $ \(slotNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
       addHistoricalData cHistory nodeId now ForgedSlotLastData $ ValueI slotNum
 
   updateNodeIsLeader =
-    whenJust (readMaybe valueS) $ \(slotNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
       addHistoricalData cHistory nodeId now NodeIsLeaderData $ ValueI slotNum
 
   updateNodeIsNotLeader =
-    whenJust (readMaybe valueS) $ \(slotNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
       addHistoricalData cHistory nodeId now NodeIsNotLeaderData $ ValueI slotNum
 
   updateForgedInvalidSlotLast =
-    whenJust (readMaybe valueS) $ \(slotNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
       addHistoricalData cHistory nodeId now ForgedInvalidSlotLastData $ ValueI slotNum
 
   updateAdoptedSlotLast =
-    whenJust (readMaybe valueS) $ \(slotNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
       addHistoricalData cHistory nodeId now AdoptedSlotLastData $ ValueI slotNum
 
   updateNotAdoptedSlotLast =
-    whenJust (readMaybe valueS) $ \(slotNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
       addHistoricalData cHistory nodeId now NotAdoptedSlotLastData $ ValueI slotNum
 
   updateAboutToLeadSlotLast =
-    whenJust (readMaybe valueS) $ \(slotNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
       addHistoricalData cHistory nodeId now AboutToLeadSlotLastData $ ValueI slotNum
 
   updateCouldNotForgeSlotLast =
-    whenJust (readMaybe valueS) $ \(slotNum :: Integer) ->
+    whenJust (readMaybe valueS) $ \(slotNum :: Int) ->
       addHistoricalData cHistory nodeId now CouldNotForgeSlotLastData $ ValueI slotNum
