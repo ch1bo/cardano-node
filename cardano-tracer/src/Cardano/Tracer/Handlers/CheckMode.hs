@@ -18,7 +18,9 @@ import           Cardano.Tracer.Handlers.Metrics.Utils
 import           Cardano.Tracer.Handlers.RTView.State.TraceObjects
 import           Cardano.Tracer.Types
 
--- | ...
+-- | When 'cardano-tracer' is launched with '--check-mode' flag, it
+--   prints out all 'EKG.Metrics' and 'TraceObject's it receives from
+--   the node(s). We use it for debug purposes.
 runChecker
   :: Bool
   -> AcceptedMetrics
