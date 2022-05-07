@@ -57,21 +57,10 @@ addNodeColumn window loggingConfig (NodeId anId) = do
                               # set text "—"
                     ]
   addNodeCell "epoch" [ string "#"
-                      , UI.span ## (id' <> "__node-epoch-num")
-                                # set text "—"
-                      , UI.p #. "mt-4" #+
-                          [ UI.mkElement "progress" ## (id' <> "__node-epoch-progress")
-                                                    #. "progress is-small rt-view-epoch-progress"
-                                                    # set value "0.00"
-                          ]
-                      , UI.div #. "columns mt-1" #+
-                          [ UI.div #. "column" #+
-                              [ UI.span ## (id' <> "__node-epoch-start") #. "is-size-6" # set text "—"
-                              ]
-                          , UI.div #. "column has-text-right" #+
-                              [ UI.span ## (id' <> "__node-epoch-end") #. "is-size-6" # set text "—"
-                              ]
-                          ]
+                      , UI.span ## (id' <> "__node-epoch-num") # set text "—"
+                      , image "has-tooltip-multiline has-tooltip-top rt-view-epoch-end" endSVG
+                              # set dataTooltip "End date of this epoch"
+                      , UI.span ## (id' <> "__node-epoch-end") # set text "—"
                       ]
   addNodeCell "system-start-time" [ UI.span ## (id' <> "__node-system-start-time")
                                             # set text "—"
@@ -86,9 +75,7 @@ addNodeColumn window loggingConfig (NodeId anId) = do
                                    #+ ls
                          ]
   addNodeCell "block-replay" [ UI.span ## (id' <> "__node-block-replay")
-                                       # set text "0"
-                             , UI.span ## (id' <> "__node-block-replay-pct")
-                                       # set html "&nbsp;%"
+                                       # set html "0&nbsp;%"
                              ]
   addNodeCell "chunk-validation" [ UI.span ## (id' <> "__node-chunk-validation")
                                            # set text "—"

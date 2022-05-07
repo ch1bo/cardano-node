@@ -154,7 +154,7 @@ setBlockReplayProgress
   -> DisplayedElements
   -> AcceptedMetrics
   -> UI ()
-setBlockReplayProgress window connected displayedElements acceptedMetrics = do
+setBlockReplayProgress window connected _displayedElements acceptedMetrics = do
   allMetrics <- liftIO $ readTVarIO acceptedMetrics
   forM_ connected $ \nodeId ->
     whenJust (M.lookup nodeId allMetrics) $ \(ekgStore, _) -> do
@@ -162,24 +162,14 @@ setBlockReplayProgress window connected displayedElements acceptedMetrics = do
       whenJust (lookup "Block replay progress (%)" metrics) $ \metricValue ->
         updateBlockReplayProgress nodeId $ T.unpack metricValue
  where
-  updateBlockReplayProgress nodeId@(NodeId anId) valueS =
+  updateBlockReplayProgress (NodeId anId) valueS =
     whenJust (readMaybe valueS) $ \(progressPct :: Double) -> do
-      let progressPctS = T.pack $ show progressPct
-          nodeBlockReplayElId = anId <> "__node-block-replay"
-      liftIO (getDisplayedValue displayedElements nodeId nodeBlockReplayElId) >>= \case
-        Nothing ->
-          setAndRemember progressPctS nodeId nodeBlockReplayElId
-        Just displayedProgress ->
-          unless (progressPctS == displayedProgress) $
-            setAndRemember progressPctS nodeId nodeBlockReplayElId
-
-  setAndRemember progressPctS nodeId@(NodeId anId) nodeBlockReplayElId = do
-    findAndSetText progressPctS window nodeBlockReplayElId
-    liftIO $ saveDisplayedValue displayedElements nodeId nodeBlockReplayElId progressPctS
-    when ("100" `T.isInfixOf` progressPctS) $ do
-      let nodeBlockReplayPctElId = anId <> "__node-block-replay-pct"
-      findAndSet (set UI.class_ "rt-view-percent-done") window nodeBlockReplayElId
-      findAndSet (set UI.class_ "rt-view-percent-done") window nodeBlockReplayPctElId
+      let nodeBlockReplayElId = anId <> "__node-block-replay"
+          progressPctS = T.pack $ show progressPct
+      if ("100" `T.isInfixOf` progressPctS)
+        then findAndSet (set html "100&nbsp;%" . set UI.class_ "rt-view-percent-done")
+                        window nodeBlockReplayElId
+        else findAndSetHTML (progressPctS <> "&nbsp;%") window nodeBlockReplayElId
 
 setChunkValidationProgress
   :: UI.Window
@@ -204,9 +194,9 @@ setChunkValidationProgress window connected savedTO = do
                 findAndSetHTML (T.init progressPct <> "&nbsp;%: no. " <> current <> " from " <> T.init from)
                                window nodeChunkValidationElId
               _ -> return ()
-          "Cardano.Node.ChainDB.ImmDbEvent.ValidatedLastLocation" -> do
-            findAndSetHTML "100.0&nbsp;%" window nodeChunkValidationElId
-            findAndSet (set UI.class_ "rt-view-percent-done") window nodeChunkValidationElId
+          "Cardano.Node.ChainDB.ImmDbEvent.ValidatedLastLocation" ->
+            findAndSet (set html "100&nbsp;%" . set UI.class_ "rt-view-percent-done")
+                       window nodeChunkValidationElId
           _ -> return ()
 
 setLedgerDBProgress
@@ -229,10 +219,10 @@ setLedgerDBProgress window connected savedTO = do
             -- Example: "Pushing ledger state for block b1e6...fc5a at slot 54495204. Progress: 3.66%"
             case T.words trObValue of
               [_, _, _, _, _, _, _, _, _, _, progressPct] -> do
-                findAndSetHTML (T.init progressPct <> "&nbsp;%") window nodeLedgerDBUpdateElId
-                when ("100" `T.isInfixOf` progressPct) $ do
-                  findAndSetHTML "100.0&nbsp;%" window nodeLedgerDBUpdateElId
-                  findAndSet (set UI.class_ "rt-view-percent-done") window nodeLedgerDBUpdateElId
+                if ("100" `T.isInfixOf` progressPct)
+                  then findAndSet (set html "100&nbsp;%" . set UI.class_ "rt-view-percent-done")
+                                  window nodeLedgerDBUpdateElId
+                  else findAndSetHTML (T.init progressPct <> "&nbsp;%") window nodeLedgerDBUpdateElId
               _ -> return ()
           _ -> return ()
 
@@ -274,36 +264,24 @@ setEraEpochInfo window connected displayed acceptedMetrics nodesEraSettings = do
       setDisplayedValue window nodeId displayed (anId <> "__node-era") $ nesEra settings
       whenJust (M.lookup nodeId allMetrics) $ \(ekgStore, _) -> do
         metrics <- liftIO $ getListOfMetrics ekgStore
-        forM_ metrics $ \(mName, mValue) ->
-          case mName of
-            "cardano.node.epoch"       -> updateEpochInfo settings nodeId mValue
-            "cardano.node.slotInEpoch" -> updateEpochProgress settings anId mValue
-            _ -> return ()
+        whenJust (lookup "cardano.node.epoch" metrics) $ \mValue ->
+          updateEpochInfo settings nodeId mValue
  where
-  updateEpochProgress NodeEraSettings{nesEpochLength} anId mValue =
-    whenJust (readMaybe $ T.unpack mValue) $ \(slotInEpochNum :: Integer) -> do
-      let !(epochProgressPct :: Double) =
-            fromIntegral slotInEpochNum / fromIntegral nesEpochLength / 100.0
-      findAndSet (set value $ show epochProgressPct) window (anId <> "__node-epoch-progress")
-
   updateEpochInfo nodeEraSettings nodeId@(NodeId anId) mValue = do
     setDisplayedValue window nodeId displayed (anId <> "__node-epoch-num") mValue
     whenJust (readMaybe $ T.unpack mValue) $ \(epochNum :: Int) ->
-      whenJust (getTimeRangeOfCurrentEpoch nodeEraSettings epochNum) $ \(start, end) -> do
-        let start' = T.replace " " "<br>" $ formatT start
-            end'   = T.replace " " "<br>" $ formatT end
-        findAndSetHTML start' window $ anId <> "__node-epoch-start"
-        findAndSetHTML end'   window $ anId <> "__node-epoch-end"
+      whenJust (getEndOfCurrentEpoch nodeEraSettings epochNum) $ \end ->
+        findAndSetHTML (formatT end) window $ anId <> "__node-epoch-end"
 
   formatT = T.pack . formatTime defaultTimeLocale "%D %T"
 
-  getTimeRangeOfCurrentEpoch NodeEraSettings{nesEra, nesSlotLengthInS, nesEpochLength} currentEpoch =
+  getEndOfCurrentEpoch NodeEraSettings{nesEra, nesSlotLengthInS, nesEpochLength} currentEpoch =
     case lookup nesEra epochsInfo of
       Nothing -> Nothing
-      Just (epochStartDate, firstEpochInEra) -> do
+      Just (epochStartDate, firstEpochInEra) ->
         let elapsedEpochsInEra = currentEpoch - firstEpochInEra
             epochLengthInS = nesSlotLengthInS * nesEpochLength
             secondsFromEpochStartToEpoch = epochLengthInS * elapsedEpochsInEra
-            !dateOfEpochStart = epochStartDate + fromIntegral secondsFromEpochStartToEpoch
+            dateOfEpochStart = epochStartDate + fromIntegral secondsFromEpochStartToEpoch
             !dateOfEpochEnd = dateOfEpochStart + fromIntegral epochLengthInS
-        Just (s2utc dateOfEpochStart, s2utc dateOfEpochEnd)
+        in Just $ s2utc dateOfEpochEnd

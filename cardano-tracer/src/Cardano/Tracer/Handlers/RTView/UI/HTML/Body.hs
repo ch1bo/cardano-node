@@ -174,8 +174,8 @@ mkPageBody window networkConfig connected
                               [ UI.td #+ [ image "rt-view-overview-icon" lengthSVG
                                          , string "Epoch"
                                          , image "has-tooltip-multiline has-tooltip-right rt-view-what-icon" whatSVG
-                                                 # set dataTooltip ("Current epoch from node."
-                                                                    <> " It can be outdated because of out of sync!")
+                                                 # set dataTooltip ("Current epoch from this node."
+                                                                    <> " It can be outdated because of node's out of sync!")
                                          ]
                               ]
                           , UI.tr ## "node-system-start-time-row" #+

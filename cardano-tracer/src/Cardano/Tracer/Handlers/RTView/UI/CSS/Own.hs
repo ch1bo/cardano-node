@@ -282,6 +282,13 @@ span[data-tooltip] {
   color: #999;
 }
 
+.dark .rt-view-epoch-end svg {
+  width: 16px;
+  margin-left: 20px;
+  margin-right: 5px;
+  color: #0cc9cb;
+}
+
 /**** Light Theme ****/
 
 .light {
@@ -493,6 +500,13 @@ span[data-tooltip] {
   width: 18px;
   margin-left: 12px;
   color: #9a9a9a;
+}
+
+.light .rt-view-epoch-end svg {
+  width: 16px;
+  margin-left: 20px;
+  margin-right: 5px;
+  color: #038b8c;
 }
 |]
 
