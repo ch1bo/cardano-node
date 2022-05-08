@@ -151,18 +151,20 @@ addHistoricalData history nodeId now dataName valueH = atomically $
         in M.adjust (const newDataForNode) nodeId currentHistory
  where
   -- All points that older than 'minAge' should be deleted.
-  deleteOutdated [] = []
-  deleteOutdated (point@(tsInSec, _):otherPoints) =
-    if tsInSec < minAge
-      then
-        -- This point is too old, do not keep it anymore.
-        deleteOutdated otherPoints
-      else
-        -- This point should be kept.
-        -- Since the points were converted to asc list, all the next points
-        -- are definitely newer (have bigger 'tsInSec'), so there is no need
-        -- to check them.
-        point : otherPoints
+  deleteOutdated = go
+   where
+    go [] = []
+    go (point@(tsInSec, _):otherPoints) =
+      if tsInSec < minAge
+        then
+          -- This point is too old, do not keep it anymore.
+          go otherPoints
+        else
+          -- This point should be kept.
+          -- Since the points were converted to asc list, all the next points
+          -- are definitely newer (have bigger 'tsInSec'), so there is no need
+          -- to check them.
+          point : otherPoints
 
   !minAge = utc2s now - pointsAgeInSec
   pointsAgeInSec = 12 * 60 * 60

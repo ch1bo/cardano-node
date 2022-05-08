@@ -100,11 +100,15 @@ updateDisplayedElements displayedElements connected = atomically $
                withoutDisconnected = deleteDisconnected disconnectedIds currentDisplayedEls
            in addNewlyConnected newlyConnectedIds withoutDisconnected
  where
-   deleteDisconnected [] els = els
-   deleteDisconnected (anId:ids) els = deleteDisconnected ids $ M.delete anId els
+  deleteDisconnected = go
+   where
+    go [] els = els
+    go (anId:ids) els = go ids $ M.delete anId els
 
-   addNewlyConnected [] els = els
-   addNewlyConnected (anId:ids) els = addNewlyConnected ids $ M.insert anId M.empty els
+  addNewlyConnected = go
+   where
+    go [] els = els
+    go (anId:ids) els = go ids $ M.insert anId M.empty els
 
 -- | If the user reloaded the web-page, after DOM re-rendering, we have to restore
 --   displayed state of all elements that they have _before_ page's reload.

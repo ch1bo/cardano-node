@@ -55,6 +55,7 @@ saveTraceObjects savedTraceObjects nodeId traceObjects =
   mkName = intercalate "."
 
   -- Update saved 'TraceObject's by new ones: existing value will be replaced.
-  updateSavedBy saved [] = saved
-  updateSavedBy saved ((ns, toV):others) =
-    M.insert ns toV saved `updateSavedBy` others
+  updateSavedBy = go
+   where 
+    go saved [] = saved
+    go saved ((ns, toV):others) = M.insert ns toV saved `go` others
