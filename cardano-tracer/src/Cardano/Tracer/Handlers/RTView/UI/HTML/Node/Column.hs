@@ -15,6 +15,7 @@ import           Graphics.UI.Threepenny.Core
 import           System.FilePath ((</>))
 
 import           Cardano.Tracer.Configuration
+import           Cardano.Tracer.Handlers.RTView.UI.HTML.Node.Peers
 import           Cardano.Tracer.Handlers.RTView.UI.JS.Utils
 import           Cardano.Tracer.Handlers.RTView.UI.Img.Icons
 import           Cardano.Tracer.Handlers.RTView.UI.Theme
@@ -31,6 +32,11 @@ addNodeColumn window loggingConfig (NodeId anId) = do
   let id' = unpack anId
   itIsDarkTheme <- isCurrentThemeDark
   ls <- logsSettings loggingConfig id' itIsDarkTheme
+
+  peersTable <- mkPeersTable id'
+  peersDetails <- UI.button #. "button is-info is-small ml-4" # set text "Details"
+  on UI.click peersDetails . const $ element peersTable #. "modal is-active"
+
   addNodeCellH "name"    [ image "rt-view-node-chart-label has-tooltip-multiline has-tooltip-left" rectangleSVG
                                  ## (id' <> "__node-chart-label")
                                  # set dataTooltip "Label using for this node on charts"
@@ -83,6 +89,12 @@ addNodeColumn window loggingConfig (NodeId anId) = do
   addNodeCell "update-ledger-db" [ UI.span ## (id' <> "__node-update-ledger-db")
                                            # set html "0&nbsp;%"
                                  ]
+  addNodeCell "peers" [ string "Num: "
+                      , UI.span ## (id' <> "__node-peers-num")
+                                # set text "—"
+                      , element peersDetails
+                      , element peersTable
+                      ]
   addNodeCell "leadership" [ UI.span ## (id' <> "__node-leadership")
                                      # set text "—"
                            ]

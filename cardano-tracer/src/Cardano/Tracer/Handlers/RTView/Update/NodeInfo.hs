@@ -36,6 +36,7 @@ askNSetNodeInfo window dpRequestors newlyConnected displayedElements =
           [ (nodeNameElId,             shortenName $ niName ni)
           , (anId <> "__node-version", niVersion ni)
           , (anId <> "__node-commit",  T.take 7 $ niCommit ni)
+          , (anId <> "__node-name-for-peers", shortenName $ niName ni)
           ]
 
         findAndSet (set UI.href $ nodeLink (niCommit ni)) window (anId <> "__node-commit")

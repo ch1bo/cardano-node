@@ -17,6 +17,7 @@ import           Cardano.Tracer.Configuration
 import           Cardano.Tracer.Handlers.RTView.State.Common
 import           Cardano.Tracer.Handlers.RTView.State.Displayed
 import           Cardano.Tracer.Handlers.RTView.State.Historical
+import           Cardano.Tracer.Handlers.RTView.State.Peers
 import           Cardano.Tracer.Handlers.RTView.State.TraceObjects
 import           Cardano.Tracer.Handlers.RTView.UI.CSS.Bulma
 import           Cardano.Tracer.Handlers.RTView.UI.CSS.Own
@@ -66,6 +67,7 @@ mkMainPage connectedNodes displayedElements acceptedMetrics savedTO
   colors <- initColors
   datasetIndices <- initDatasetsIndices
   datasetTimestamps <- initDatasetsTimestamps
+  peers <- liftIO initPeers
 
   pageBody <-
     mkPageBody
@@ -114,6 +116,7 @@ mkMainPage connectedNodes displayedElements acceptedMetrics savedTO
       loggingConfig
       colors
       datasetIndices
+      peers
   UI.start uiUpdateTimer
 
   on UI.disconnect window . const $ do

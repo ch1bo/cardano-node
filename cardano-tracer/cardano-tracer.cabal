@@ -55,6 +55,7 @@ library
                        Cardano.Tracer.Handlers.RTView.State.Displayed
                        Cardano.Tracer.Handlers.RTView.State.Historical
                        Cardano.Tracer.Handlers.RTView.State.Last
+                       Cardano.Tracer.Handlers.RTView.State.Peers
                        Cardano.Tracer.Handlers.RTView.State.TraceObjects
                        Cardano.Tracer.Handlers.RTView.System
                        Cardano.Tracer.Handlers.RTView.UI.CSS.Bulma

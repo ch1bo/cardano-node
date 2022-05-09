@@ -213,6 +213,11 @@ mkPageBody window networkConfig connected
                                          , string "Ledger DB"
                                          ]
                               ]
+                          , UI.tr ## "node-peers-row" #+
+                              [ UI.td #+ [ image "rt-view-overview-icon" peersSVG
+                                         , string "Peers"
+                                         ]
+                              ]
                           , UI.tr ## "node-leadership-row" #+
                               [ UI.td #+ [ image "rt-view-overview-icon" leaderSVG
                                          , string "Leadership"

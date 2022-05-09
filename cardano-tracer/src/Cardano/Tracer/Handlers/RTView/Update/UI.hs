@@ -16,6 +16,7 @@ import           Graphics.UI.Threepenny.Core
 import           Cardano.Tracer.Configuration
 import           Cardano.Tracer.Handlers.RTView.State.Common
 import           Cardano.Tracer.Handlers.RTView.State.Displayed
+import           Cardano.Tracer.Handlers.RTView.State.Peers
 import           Cardano.Tracer.Handlers.RTView.State.TraceObjects
 import           Cardano.Tracer.Handlers.RTView.UI.Types
 import           Cardano.Tracer.Handlers.RTView.Update.NodeInfo
@@ -34,9 +35,10 @@ updateUI
   -> NonEmpty LoggingParams
   -> Colors
   -> DatasetsIndices
+  -> Peers
   -> UI ()
 updateUI window connectedNodes displayedElements acceptedMetrics savedTO
-         nodesEraSettings dpRequestors loggingConfig colors datasetIndices = do
+         nodesEraSettings dpRequestors loggingConfig colors datasetIndices peers = do
   updateNodesUI
     window
     connectedNodes
@@ -53,7 +55,7 @@ updateUI window connectedNodes displayedElements acceptedMetrics savedTO
   forM_ (M.toList savedTraceObjects) $ \(nodeId, savedTOForNode) ->
     forM_ (M.toList savedTOForNode) $ \(namespace, trObValue) ->
       case namespace of
-        "Cardano.Node.Peers" -> updatePeers window nodeId displayedElements trObValue
+        "Cardano.Node.Peers" -> updatePeers window nodeId peers displayedElements trObValue
         _ -> return ()
 
 updateUIAfterReload

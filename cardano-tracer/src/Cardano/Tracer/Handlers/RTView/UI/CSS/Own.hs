@@ -207,6 +207,23 @@ span[data-tooltip] {
   border-bottom-right-radius: 6px;
 }
 
+.dark .rt-view-peer-title {
+  color: whitesmoke;
+}
+
+.dark .rt-view-peer-head {
+  color: whitesmoke;
+  background-color: #282841;
+  border-bottom: 1px solid #555;
+}
+
+.dark .rt-view-peer-body {
+  color: whitesmoke;
+  background-color: #131325;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
 .dark .rt-view-main-table {
   background-color: #131325;
   color: whitesmoke;
@@ -222,19 +239,23 @@ span[data-tooltip] {
   color: whitesmoke;
   border-bottom: 2px solid #888;
   vertical-align: middle;
-  min-width: 330px;
 }
 
-.dark .rt-view-peers-table-container {
-  margin-left: 15px;
-  margin-right: 15px;
-}
-
-.dark .rt-view-peers-table {
-  width: 100%;
-  background-color: #2c2b3b;
+.dark .rt-view-peer-table {
+  background-color: #131325;
   color: whitesmoke;
-  font-size: 19px;
+}
+
+.dark .rt-view-peer-table td {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 0px solid #444;
+}
+
+.dark .rt-view-peer-table th {
+  color: whitesmoke;
+  border-bottom: 2px solid #888;
+  vertical-align: middle;
 }
 
 .dark .rt-view-chart-group-title {
@@ -427,6 +448,23 @@ span[data-tooltip] {
   border-bottom-right-radius: 6px;
 }
 
+.light .rt-view-peer-title {
+  color: #444;
+}
+
+.light .rt-view-peer-head {
+  color: whitesmoke;
+  background-color: whitesmoke;
+  border-bottom: 1px solid #bebebe;
+}
+
+.light .rt-view-peer-body {
+  color: #555;
+  background-color: #eaeaea;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
 .light .rt-view-main-table {
   background-color: #f5f5f5;
   color: #444;
@@ -442,19 +480,23 @@ span[data-tooltip] {
   color: #444;
   border-bottom: 2px solid #cfcfcf;
   vertical-align: middle;
-  min-width: 330px;
 }
 
-.light .rt-view-peers-table-container {
-  margin-left: 15px;
-  margin-right: 15px;
+.light .rt-view-peer-table {
+  background-color: #eaeaea;
+  color: #444;
 }
 
-.light .rt-view-peers-table {
-  width: 100%;
-  background-color: #2c2b3b;
-  color: whitesmoke;
-  font-size: 19px;
+.light .rt-view-peer-table td {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 0px solid #444;
+}
+
+.light .rt-view-peer-table th {
+  color: #444;
+  border-bottom: 2px solid #cfcfcf;
+  vertical-align: middle;
 }
 
 .light .rt-view-chart-group-title {
