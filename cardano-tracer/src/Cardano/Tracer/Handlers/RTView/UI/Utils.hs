@@ -85,19 +85,31 @@ findAndSetText t = findAndSet (set text $ unpack t)
 
 justCleanText :: Text -> UI ()
 justCleanText elId =
-  UI.runFunction $ UI.ffi "document.getElementById(%1).innerHTML = '';" elId
+  UI.runFunction $ UI.ffi setTextValue' elId T.empty
 
 setTextValue :: Text -> Text -> UI ()
 setTextValue elId textToSet =
-  UI.runFunction $ UI.ffi "document.getElementById(%1).innerHTML = %2;" elId textToSet
+  UI.runFunction $ UI.ffi setTextValue' elId textToSet
 
 setTextValues :: [(Text, Text)] -> UI ()
 setTextValues [] = return ()
 setTextValues idsWithValues = UI.runFunction $ UI.ffi setAllValues
  where
-  setAllValues = T.unpack . T.concat $ map setValue idsWithValues
-  setValue (elId, textToSet) =
-    "document.getElementById(\"" <> elId <> "\").innerHTML = \"" <> textToSet <> "\";"
+  setAllValues = T.unpack . T.concat $ map setValue (zip [1 :: Int ..] idsWithValues)
+  setValue (n, (elId, textToSet)) =
+    let elN = T.pack $ show n in
+    "var el" <> elN <> " = document.getElementById(\""
+    <> elId
+    <> "\"); if (el" <> elN <> " !== null) el" <> elN <> ".innerHTML = \""
+    <> textToSet
+    <> "\";"
+
+setTextValue' :: String
+setTextValue' = [s|
+var el = document.getElementById(%1);
+if (el !== null)
+  el.innerHTML = %2;
+|]
 
 setTextAndClasses :: Text -> Text -> Text -> UI ()
 setTextAndClasses elId textToSet classesToSet =
@@ -106,8 +118,10 @@ setTextAndClasses elId textToSet classesToSet =
 setTextAndClasses' :: String
 setTextAndClasses' = [s|
 var el = document.getElementById(%1);
-el.innerHTML = %2;
-el.className = %3;
+if (el !== null) {
+  el.innerHTML = %2;
+  el.className = %3;
+}
 |]
 
 findAndAdd
