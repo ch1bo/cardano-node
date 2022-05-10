@@ -7,6 +7,7 @@ module Cardano.Tracer.Handlers.RTView.UI.Utils
   , dataState
   , dataTooltip
   , findByClassAndDo
+  , findAndDo
   , findAndSet
   , findAndSetHTML
   , findAndSetText

@@ -34,8 +34,11 @@ addNodeColumn window loggingConfig (NodeId anId) = do
   ls <- logsSettings loggingConfig id' itIsDarkTheme
 
   peersTable <- mkPeersTable id'
-  peersDetails <- UI.button #. "button is-info is-small ml-4" # set text "Details"
-  on UI.click peersDetails . const $ element peersTable #. "modal is-active"
+  peersDetailsButton <- UI.button ## (id' <> "__node-peers-details-button")
+                                  #. "button is-info"
+                                  # set UI.enabled False
+                                  # set text "Details"
+  on UI.click peersDetailsButton . const $ element peersTable #. "modal is-active" 
 
   addNodeCellH "name"    [ image "rt-view-node-chart-label has-tooltip-multiline has-tooltip-left" rectangleSVG
                                  ## (id' <> "__node-chart-label")
@@ -89,10 +92,12 @@ addNodeColumn window loggingConfig (NodeId anId) = do
   addNodeCell "update-ledger-db" [ UI.span ## (id' <> "__node-update-ledger-db")
                                            # set html "0&nbsp;%"
                                  ]
-  addNodeCell "peers" [ string "Num: "
-                      , UI.span ## (id' <> "__node-peers-num")
-                                # set text "—"
-                      , element peersDetails
+  addNodeCell "peers" [ UI.div #. "buttons has-addons" #+
+                          [ UI.button ## (id' <> "__node-peers-num")
+                                      #. "button is-static"
+                                      # set text "Num: —"
+                          , element peersDetailsButton
+                          ]
                       , element peersTable
                       ]
   addNodeCell "leadership" [ UI.span ## (id' <> "__node-leadership")

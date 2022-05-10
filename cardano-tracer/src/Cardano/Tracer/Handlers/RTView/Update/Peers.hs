@@ -8,13 +8,17 @@ module Cardano.Tracer.Handlers.RTView.Update.Peers
 
 import           Control.Monad
 import           Control.Monad.Extra (whenJustM)
+import           Data.List (find)
+import           Data.Maybe (catMaybes)
+import           Data.Set ((\\))
+import qualified Data.Set as S
 import           Data.Text (Text, unpack)
 import qualified Data.Text as T
 import qualified Graphics.UI.Threepenny as UI
 import           Graphics.UI.Threepenny.Core
 
-import           Cardano.Tracer.Handlers.RTView.State.Displayed
 import           Cardano.Tracer.Handlers.RTView.State.Peers
+import           Cardano.Tracer.Handlers.RTView.UI.HTML.Node.Peers
 import           Cardano.Tracer.Handlers.RTView.UI.Utils
 import           Cardano.Tracer.Handlers.RTView.Update.Utils
 import           Cardano.Tracer.Types
@@ -23,49 +27,65 @@ updatePeers
   :: UI.Window
   -> NodeId
   -> Peers
-  -> DisplayedElements
   -> Text
   -> UI ()
-updatePeers window nodeId@(NodeId anId) peers displayedElements trObValue =
+updatePeers window nodeId@(NodeId anId) displayedPeers trObValue =
   if "NodeKernelPeers" `T.isInfixOf` trObValue
     then return () -- It was empty 'TraceObject' (without useful info), ignore it.
     else do
-      let peersParts = T.splitOn "," trObValue
-          peersNum = length peersParts
       -- Update peers number.
-      setDisplayedValue nodeId displayedElements (anId <> "__node-peers-num") $ showT peersNum
+      setTextValue (anId <> "__node-peers-num") (showT (length peersParts))
       -- Update particular info about peers.
-      forM_ peersParts $ \peerPart ->
-        case T.words peerPart of
-          [peerAddr, status, slotNo, reqsInF, blocksInF, bytesInF] -> do
-            let idPrefix = anId <> peerAddr
-            peerIsHere <- liftIO $ doesPeerExist peers nodeId peerAddr
-            if peerIsHere
-              then
-                -- Peer is already displayed, so we have to update its values only.
-                setPeerData idPrefix status slotNo reqsInF blocksInF bytesInF
-              else do
-                -- This is new peer, so remember it and update its values.
-                liftIO $ addPeer peers nodeId peerAddr
-                addPeerRow idPrefix peerAddr status slotNo reqsInF blocksInF bytesInF
-          _ -> return () -- It's strange: wrong format of peers info, ignore it.
+      let connectedPeers = getConnectedPeers
+          connectedPeersAddresses = getConnectedPeersAddresses
+      displayedPeersAddresses <- liftIO $ getPeersAddresses displayedPeers nodeId
+      if displayedPeersAddresses /= connectedPeersAddresses
+        then do
+          -- There are some changes with number of peers: some new were connected
+          -- and/or some displayed ones were disconnected.
+          let disconnectedPeers   = displayedPeersAddresses \\ connectedPeersAddresses -- Not in connected
+              newlyConnectedPeers = connectedPeersAddresses \\ displayedPeersAddresses -- Not in displayed
+          deleteRowsForDisconnected disconnectedPeers
+          addRowsForNewlyConnected newlyConnectedPeers connectedPeers
+          -- If there is at least one connected peer, we enable 'Details' button.
+          findAndSet (set UI.enabled $ not (S.null connectedPeers))
+                     window $ anId <> "__node-peers-details-button"
+        else
+          -- No changes with number of peers, only their data was changed.
+          updateConnectedPeersData connectedPeers
  where
-  setPeerData idPrefix status slotNo reqsInF blocksInF bytesInF =
-    setTextValues
-      [ (idPrefix <> "__status",    status)
-      , (idPrefix <> "__slotNo",    slotNo)
-      , (idPrefix <> "__reqsInF",   reqsInF)
-      , (idPrefix <> "__blocksInF", blocksInF)
-      , (idPrefix <> "__bytesInF",  bytesInF)
-      ]
+  peersParts = T.splitOn "," trObValue
+
+  getConnectedPeers = S.fromList . catMaybes $
+    map (\peerPart ->
+           let peerData = T.words peerPart in
+           if length peerData == 6 then Just peerData else Nothing
+        ) peersParts
+
+  getConnectedPeersAddresses = S.map head getConnectedPeers
+
+  deleteRowsForDisconnected disconnected =
+    forM_ disconnected $ \peerAddr -> do
+      deletePeerRow window nodeId peerAddr
+      liftIO $ removePeer displayedPeers nodeId peerAddr
+
+  addRowsForNewlyConnected newlyConnectedPeers connectedPeers =
+    forM_ newlyConnectedPeers $ \peerAddr -> do
+      case find (\peerDataList -> head peerDataList == peerAddr) connectedPeers of
+        Just [_, status, slotNo, reqsInF, blocksInF, bytesInF] -> do
+          let idPrefix = anId <> peerAddr
+          addPeerRow idPrefix peerAddr status slotNo reqsInF blocksInF bytesInF
+          liftIO $ addPeer displayedPeers nodeId peerAddr
+        _ -> return ()
 
   addPeerRow idPrefix peerAddr status slotNo reqsInF blocksInF bytesInF = do
     let idPrefix' = unpack idPrefix
     whenJustM (UI.getElementById window (unpack anId <> "__node-peers-tbody")) $ \el ->
       void $ element el #+
-        [ UI.tr #+
+        [ UI.tr ## (idPrefix' <> "__node-peer-row") #+
             [ UI.td #+
                 [ UI.span ## (idPrefix' <> "__address")
+                          #. "is-family-monospace"
                           # set text (unpack peerAddr)
                 ]
             , UI.td #+
@@ -74,7 +94,7 @@ updatePeers window nodeId@(NodeId anId) peers displayedElements trObValue =
                 ]
             , UI.td #+
                 [ UI.span ## (idPrefix' <> "__slotNo")
-                          # set text (unpack slotNo)
+                          # set text (unpack $ checkSlot slotNo)
                 ]
             , UI.td #+
                 [ UI.span ## (idPrefix' <> "__reqsInF")
@@ -90,3 +110,20 @@ updatePeers window nodeId@(NodeId anId) peers displayedElements trObValue =
                 ]
             ]
         ]
+
+  updateConnectedPeersData connectedPeers = do
+    let allPeersData = concat $ map collectDataToUpdate $ S.toList connectedPeers
+    -- Update values for all peers by one single FFI-call.
+    setTextValues allPeersData
+
+  collectDataToUpdate [peerAddr, status, slotNo, reqsInF, blocksInF, bytesInF] =
+    let idPrefix = anId <> peerAddr
+    in [ (idPrefix <> "__status",    status)
+       , (idPrefix <> "__slotNo",    checkSlot slotNo)
+       , (idPrefix <> "__reqsInF",   reqsInF)
+       , (idPrefix <> "__blocksInF", blocksInF)
+       , (idPrefix <> "__bytesInF",  bytesInF)
+       ]
+  collectDataToUpdate _ = []
+
+  checkSlot slotNo = if slotNo == "???" then "—" else slotNo

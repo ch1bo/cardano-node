@@ -55,7 +55,7 @@ updateUI window connectedNodes displayedElements acceptedMetrics savedTO
   forM_ (M.toList savedTraceObjects) $ \(nodeId, savedTOForNode) ->
     forM_ (M.toList savedTOForNode) $ \(namespace, trObValue) ->
       case namespace of
-        "Cardano.Node.Peers" -> updatePeers window nodeId peers displayedElements trObValue
+        "Cardano.Node.Peers" -> updatePeers window nodeId peers trObValue
         _ -> return ()
 
 updateUIAfterReload

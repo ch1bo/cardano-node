@@ -69,6 +69,28 @@ span[data-tooltip] {
   margin-right: 3px;
 }
 
+.rt-view-peer-modal {
+  width: 45%;
+}
+
+@media only screen and (max-width: 1216px) {
+  .rt-view-peer-modal {
+    width: 60%;
+  }
+}
+
+@media only screen and (max-width: 1024px) {
+  .rt-view-peer-modal {
+    width: 70%;
+  }
+}
+
+@media only screen and (max-width: 769px) {
+  .rt-view-peer-modal {
+    width: 80%;
+  }
+}
+
 /* Dark Theme */
 
 .dark {

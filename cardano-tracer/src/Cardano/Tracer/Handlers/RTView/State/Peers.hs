@@ -7,6 +7,7 @@ module Cardano.Tracer.Handlers.RTView.State.Peers
   , Peers
   , addPeer
   , doesPeerExist
+  , getPeersAddresses
   , initPeers
   , removePeer
   ) where
@@ -62,3 +63,12 @@ doesPeerExist peers nodeId peerAddr =
   (M.lookup nodeId <$> readTVarIO peers) >>= \case
     Nothing -> return False
     Just peersForNode -> return $ S.member peerAddr peersForNode
+
+getPeersAddresses
+  :: Peers
+  -> NodeId
+  -> IO (Set PeerAddress)
+getPeersAddresses peers nodeId = 
+  (M.lookup nodeId <$> readTVarIO peers) >>= \case
+    Nothing           -> return S.empty
+    Just peersForNode -> return peersForNode
