@@ -235,8 +235,9 @@ import qualified Cardano.Ledger.Alonzo.TxBody as Alonzo
 import qualified Cardano.Ledger.Alonzo.TxWitness as Alonzo
 
 import qualified Cardano.Ledger.Babbage.TxBody as Babbage
+import qualified Cardano.Ledger.Babbage.PParams as Babbage
 import           Ouroboros.Consensus.Shelley.Eras (StandardAllegra, StandardAlonzo, StandardMary,
-                   StandardShelley)
+                   StandardShelley, StandardBabbage)
 
 import           Cardano.Api.Address
 import           Cardano.Api.Certificate
@@ -3186,6 +3187,7 @@ makeShelleyTransactionBody era@ShelleyBasedEraBabbage
                              txFee,
                              txValidityRange = (lowerBound, upperBound),
                              txMetadata,
+                             txAuxScripts,
                              txExtraKeyWits,
                              txProtocolParams,
                              txWithdrawals,
@@ -3285,22 +3287,20 @@ makeShelleyTransactionBody era@ShelleyBasedEraBabbage
            , Babbage.scriptIntegrityHash =
                case txProtocolParams of
                  BuildTxWith Nothing        -> SNothing
-                 BuildTxWith (Just _pparams) ->
-                   error "Babbage scriptIntegrityHash - depends on consensus exposing a babbage era"
-                   -- Alonzo.hashScriptIntegrity
-                   --   (toLedgerPParams ShelleyBasedEraBabbage pparams)
-                   --   languages
-                   --   (error "Babbage redeemers - depends on consensus exposing a babbage era")
-                   --   (error "Babbage datums - depends on consensus exposing a babbage era")
-           , Babbage.adHash = error "Babbage txAuxData - depends on consensus exposing a babbage era"
-                 -- (maybeToStrictMaybe
-                 --                (Ledger.hashAuxiliaryData <$> (error "TODO: Babbage txAuxData")))
+                 BuildTxWith (Just pparams) ->
+                   Alonzo.hashScriptIntegrity
+                     (toLedgerPParams ShelleyBasedEraBabbage pparams)
+                     languages
+                     redeemers
+                     datums
+           , Babbage.adHash =
+                 maybeToStrictMaybe (Ledger.hashAuxiliaryData <$> txAuxData)
            , Babbage.txnetworkid = SNothing
            })
-        (error "TODO: Babbage scripts - depends on consensus exposing a babbage era")
+        scripts
         (TxBodyScriptData ScriptDataInBabbageEra
-          (error "TODO: Babbage datums") (error "TODO: Babbage redeemers"))
-        (error "TODO: Babbage txAuxData")
+          datums redeemers)
+        txAuxData
         txScriptValidity
   where
     maxShelleyTxInIx :: Word
@@ -3309,39 +3309,37 @@ makeShelleyTransactionBody era@ShelleyBasedEraBabbage
     witnesses :: [(ScriptWitnessIndex, AnyScriptWitness BabbageEra)]
     witnesses = collectTxBodyScriptWitnesses txbodycontent
 
-    -- TODO: Babbage era - depends on consensus exposing a babbage era
-    -- scripts :: [Ledger.Script StandardBabbage]
-    -- scripts =
-    --   [ toShelleyScript (scriptWitnessScript scriptwitness)
-    --   | (_, AnyScriptWitness scriptwitness) <- witnesses
-    --   ]
+    scripts :: [Ledger.Script StandardBabbage]
+    scripts =
+      [ toShelleyScript (scriptWitnessScript scriptwitness)
+      | (_, AnyScriptWitness scriptwitness) <- witnesses
+      ]
 
-    -- TODO: Babbage era - depends on consensus exposing a babbage era
-    --datums :: Alonzo.TxDats StandardBabbage
-    --datums =
-    --  Alonzo.TxDats $
-    --    Map.fromList
-    --      [ (Alonzo.hashData d', d')
-    --      | d <- scriptdata
-    --      , let d' = toAlonzoData d
-    --      ]
+    datums :: Alonzo.TxDats StandardBabbage
+    datums =
+     Alonzo.TxDats $
+       Map.fromList
+         [ (Alonzo.hashData d', d')
+         | d <- scriptdata
+         , let d' = toAlonzoData d
+         ]
 
-    _scriptdata :: [ScriptData]
-    _scriptdata =
+    scriptdata :: [ScriptData]
+    scriptdata =
         [ d | TxOut _ _ (TxOutDatumInTx _ d) _ <- txOuts ]
      ++ [ d | (_, AnyScriptWitness
                     (PlutusScriptWitness
                        _ _ _ (ScriptDatumForTxIn d) _ _)) <- witnesses
             ]
-    -- TODO: Babbage era - depends on consensus exposing a babbage era
-    --redeemers :: Alonzo.Redeemers StandardBabbage
-    --redeemers =
-    --  Alonzo.Redeemers $
-    --    Map.fromList
-    --      [ (toAlonzoRdmrPtr idx, (toAlonzoData d, toAlonzoExUnits e))
-    --      | (idx, AnyScriptWitness
-    --                (PlutusScriptWitness _ _ _ _ d e)) <- witnesses
-    --      ]
+
+    redeemers :: Alonzo.Redeemers StandardBabbage
+    redeemers =
+     Alonzo.Redeemers $
+       Map.fromList
+         [ (toAlonzoRdmrPtr idx, (toAlonzoData d, toAlonzoExUnits e))
+         | (idx, AnyScriptWitness
+                   (PlutusScriptWitness _ _ _ _ d e)) <- witnesses
+         ]
 
     languages :: Set Alonzo.Language
     languages =
@@ -3350,19 +3348,18 @@ makeShelleyTransactionBody era@ShelleyBasedEraBabbage
         | (_, AnyScriptWitness (PlutusScriptWitness _ v _ _ _ _)) <- witnesses
         ]
 
-    -- TODO: Babbage era - depends on consensus exposing a babbage era
-    -- txAuxData :: Maybe (Ledger.AuxiliaryData StandardBabbage)
-    -- txAuxData
-    --   | Map.null ms
-    --   , null ss   = Nothing
-    --   | otherwise = Just (toAlonzoAuxiliaryData ms ss)
-    --   where
-    --     ms = case txMetadata of
-    --            TxMetadataNone                     -> Map.empty
-    --            TxMetadataInEra _ (TxMetadata ms') -> ms'
-    --     ss = case txAuxScripts of
-    --            TxAuxScriptsNone   -> []
-    --            TxAuxScripts _ ss' -> ss'
+    txAuxData :: Maybe (Ledger.AuxiliaryData StandardBabbage)
+    txAuxData
+      | Map.null ms
+      , null ss   = Nothing
+      | otherwise = Just (toAlonzoAuxiliaryData ms ss)
+      where
+        ms = case txMetadata of
+               TxMetadataNone                     -> Map.empty
+               TxMetadataInEra _ (TxMetadata ms') -> ms'
+        ss = case txAuxScripts of
+               TxAuxScriptsNone   -> []
+               TxAuxScripts _ ss' -> ss'
 
 
 -- | A variant of 'toShelleyTxOutAny that is used only internally to this module
