@@ -13,6 +13,7 @@ module Cardano.Api.Shelley
 
     -- * Cryptographic key interface
     -- $keys
+    Key(..),
     VerificationKey(..),
     SigningKey(..),
 
