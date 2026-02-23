@@ -85,8 +85,8 @@ import           Data.Time (NominalDiffTime)
 import           Data.Word (Word32, Word64)
 import           Network.TypedProtocol.Core
 
-import           LeiosDemoTypes (TraceLeiosKernel (..), TraceLeiosPeer (TraceLeiosPeerDbException),
-                   leiosEbTxs, traceLeiosKernelToObject, traceLeiosPeerToObject)
+import           LeiosDemoTypes (TraceLeiosKernel (..), TraceLeiosPeer (..), leiosEbTxs,
+                   traceLeiosKernelToObject, traceLeiosPeerToObject)
 
 instance (LogFormatting adr, Show adr) => LogFormatting (ConnectionId adr) where
   forMachine _dtal (ConnectionId local' remote) =
@@ -2302,23 +2302,51 @@ instance LogFormatting TraceLeiosKernel where
   asMetrics _ = []
 
 instance MetaTrace TraceLeiosKernel where
-  namespaceFor _ = Namespace [] []
-
-  severityFor _ (Just TraceLeiosDbException{}) = Just Error
-  severityFor _ _ = Just Debug
+  severityFor _ = \case
+    Just TraceLeiosDbException{} -> Just Error
+    _ -> Just Debug
 
   documentFor _ = Nothing
-  allNamespaces = [ Namespace [] [] ]
+
+  namespaceFor t = Namespace [] . pure $ case t of
+    MkTraceLeiosKernel{} -> "KernelMsg"
+    TraceLeiosBlockAcquired{} -> "BlockAcquired"
+    TraceLeiosBlockPointMissing{} -> "BlockPointMissing"
+    TraceLeiosBlockTxsAcquired{} -> "BlockTxsAcquired"
+    TraceLeiosBlockForged{} -> "BlockForged"
+    TraceLeiosBlockStored{} -> "BlockStored"
+    TraceLeiosDbException{} -> "DbException"
+
+  allNamespaces =
+    map
+      (Namespace [] . pure)
+      [ "KernelMsg"
+      , "BlockAcquired"
+      , "BlockPointMissing"
+      , "BlockTxsAcquired"
+      , "BlockForged"
+      , "BlockStored"
+      , "DbException"
+      ]
 
 instance LogFormatting TraceLeiosPeer where
   forHuman = showT
   forMachine _dtal = traceLeiosPeerToObject
 
 instance MetaTrace TraceLeiosPeer where
-  namespaceFor _ = Namespace [] []
-
-  severityFor _ (Just TraceLeiosPeerDbException{}) = Just Error
-  severityFor _ _ = Just Debug
+  severityFor _ = \case
+    Just TraceLeiosPeerDbException{} -> Just Error
+    _ -> Just Debug
 
   documentFor _ = Nothing
-  allNamespaces = [ Namespace [] [] ]
+
+  namespaceFor t = Namespace [] . pure $ case t of
+    MkTraceLeiosPeer{} -> "PeerMsg"
+    TraceLeiosPeerDbException{} -> "DbException"
+
+  allNamespaces =
+    map
+      (Namespace [] . pure)
+      [ "PeerMsg"
+      , "DbException"
+      ]
